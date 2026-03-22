@@ -9,7 +9,7 @@ import sys
 import os
 
 # ── Pas dit pad aan naar je PythonAnywhere project directory ──
-project_home = '/home/JOUW_USERNAME/VD-Vleuten-Inkloksysteem'
+project_home = '/home/pasvandenakker/vdv-tijdregistratie'
 
 if project_home not in sys.path:
     sys.path.insert(0, project_home)

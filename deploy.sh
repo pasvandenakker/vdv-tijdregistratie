@@ -14,8 +14,8 @@
 set -e
 
 # ── Configuratie (pas aan naar jouw situatie) ────────────────
-USERNAME="JOUW_USERNAME"
-PROJECT_DIR="/home/$USERNAME/VD-Vleuten-Inkloksysteem"
+USERNAME="pasvandenakker"
+PROJECT_DIR="/home/$USERNAME/vdv-tijdregistratie"
 VENV_DIR="$PROJECT_DIR/venv"
 WSGI_FILE="/var/www/${USERNAME}_pythonanywhere_com_wsgi.py"
 
