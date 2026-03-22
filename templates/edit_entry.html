@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registratie bewerken</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="admin-layout">
+  {% include 'sidebar.html' %}
+  <div class="main-content">
+    <div class="content-header">
+      <h1>Registratie bewerken</h1>
+      <a href="/logs" class="btn btn-sm">← Terug</a>
+    </div>
+    <div class="content-body">
+      <div class="card" style="max-width:480px;">
+        <div class="card-body">
+          {% if error_message %}<div class="alert alert-error">{{ error_message }}</div>{% endif %}
+
+          <div class="flex-gap mb-16" style="font-size:13px; color:var(--muted); margin-bottom:20px;">
+            <span>ID: <strong class="text-mono">{{ entry['id'] }}</strong></span>
+            <span>·</span>
+            <span>Code: <strong class="text-mono">{{ entry['code'] }}</strong></span>
+          </div>
+
+          <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <div class="form-group">
+              <label class="form-label" for="action">Actie</label>
+              <select name="action" id="action" class="form-select" required>
+                <option value="in"        {% if entry['action'] == 'in'        %}selected{% endif %}>IN</option>
+                <option value="uit"       {% if entry['action'] == 'uit'       %}selected{% endif %}>UIT</option>
+                <option value="pauze_in"  {% if entry['action'] == 'pauze_in'  %}selected{% endif %}>PAUZE IN</option>
+                <option value="pauze_uit" {% if entry['action'] == 'pauze_uit' %}selected{% endif %}>PAUZE UIT</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="timestamp">Tijdstip</label>
+              <input type="text" name="timestamp" id="timestamp" class="form-input mono"
+                value="{{ entry['timestamp'] }}" placeholder="JJJJ-MM-DD UU:MM:SS" required>
+              <div class="text-hint mt-4" style="font-size:12px;">Formaat: JJJJ-MM-DD UU:MM:SS</div>
+            </div>
+            <div class="flex-gap mt-16">
+              <button type="submit" class="btn btn-primary">Opslaan</button>
+              <a href="/logs" class="btn">Annuleren</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

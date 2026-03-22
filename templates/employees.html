@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medewerkers – Tijdregistratie</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="admin-layout">
+  {% include 'sidebar.html' %}
+  <div class="main-content">
+    <div class="content-header">
+      <h1>Medewerkers</h1>
+    </div>
+    <div class="content-body">
+
+      <div class="grid-2">
+        <div>
+          <div class="card mb-16" style="margin-bottom:20px;">
+            <div class="card-header"><h2>Medewerker toevoegen</h2></div>
+            <div class="card-body">
+              {% if error_message %}<div class="alert alert-error">{{ error_message }}</div>{% endif %}
+              {% if success_message %}<div class="alert alert-success">{{ success_message }}</div>{% endif %}
+              <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="_action" value="add">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="code">Code</label>
+                    <input type="text" id="code" name="code" class="form-input mono" placeholder="b.v. 1001" maxlength="20" required>
+                  </div>
+                  <div class="form-group" style="flex:2;">
+                    <label class="form-label" for="name">Naam</label>
+                    <input type="text" id="name" name="name" class="form-input" placeholder="Voor- en achternaam" required>
+                  </div>
+                </div>
+                <button type="submit" class="btn btn-primary">Toevoegen</button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h2>Alle medewerkers</h2></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Code</th>
+                  <th>Naam</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in rows %}
+                <tr>
+                  <td class="text-mono">{{ row['code'] }}</td>
+                  <td>{{ row['name'] }}</td>
+                  <td>
+                    <span class="badge {% if row['active'] %}badge-active{% else %}badge-inactive{% endif %}">
+                      {% if row['active'] %}Actief{% else %}Inactief{% endif %}
+                    </span>
+                  </td>
+                  <td>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                      <form method="POST" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <input type="hidden" name="id" value="{{ row['id'] }}">
+                        {% if row['active'] %}
+                        <input type="hidden" name="_action" value="deactivate">
+                        <button type="submit" class="btn btn-sm btn-danger">Deactiveer</button>
+                        {% else %}
+                        <input type="hidden" name="_action" value="activate">
+                        <button type="submit" class="btn btn-sm">Activeer</button>
+                        {% endif %}
+                      </form>
+                      <form method="POST" style="display:inline;"
+                            onsubmit="return confirm('Weet je zeker dat je {{ row.name }} wilt verwijderen?\n\nLet op: dit kan alleen als er geen registraties zijn.')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <input type="hidden" name="_action" value="delete">
+                        <input type="hidden" name="id" value="{{ row['id'] }}">
+                        <button type="submit" class="btn btn-sm" style="color:var(--red);border-color:var(--red-border);">Verwijder</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" style="text-align:center; padding:24px; color:var(--hint);">Geen medewerkers.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

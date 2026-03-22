@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audit log – Tijdregistratie</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="admin-layout">
+  {% include 'sidebar.html' %}
+  <div class="main-content">
+    <div class="content-header">
+      <h1>Audit log</h1>
+      <span class="text-muted" style="font-size:13px;">Alle admin-acties</span>
+    </div>
+    <div class="content-body">
+
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Tijd</th>
+                <th>Admin</th>
+                <th>Actie</th>
+                <th>Type</th>
+                <th>ID</th>
+                <th>Oud</th>
+                <th>Nieuw</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in rows %}
+              <tr>
+                <td class="text-mono" style="font-size:12px; white-space:nowrap;">{{ row['timestamp'] }}</td>
+                <td>{{ row['admin_user'] }}</td>
+                <td><span class="badge badge-in" style="font-size:10px;">{{ row['action'] }}</span></td>
+                <td class="text-muted">{{ row['target_type'] or '—' }}</td>
+                <td class="text-mono">{{ row['target_id'] or '—' }}</td>
+                <td class="text-muted" style="font-size:12px; max-width:150px; overflow:hidden; text-overflow:ellipsis;">{{ row['old_value'] or '—' }}</td>
+                <td class="text-muted" style="font-size:12px; max-width:150px; overflow:hidden; text-overflow:ellipsis;">{{ row['new_value'] or '—' }}</td>
+              </tr>
+              {% else %}
+              <tr><td colspan="7" style="text-align:center; padding:32px; color:var(--hint);">Geen audit-logregels.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {% if total_pages > 1 %}
+      <div class="flex-gap mt-16" style="justify-content:center;">
+        {% if page > 1 %}
+        <a href="/audit-log?page={{ page - 1 }}" class="btn btn-sm">← Vorige</a>
+        {% endif %}
+        <span class="text-muted" style="font-size:13px;">Pagina {{ page }} van {{ total_pages }}</span>
+        {% if page < total_pages %}
+        <a href="/audit-log?page={{ page + 1 }}" class="btn btn-sm">Volgende →</a>
+        {% endif %}
+      </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

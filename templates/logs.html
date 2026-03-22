@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registraties – Tijdregistratie</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="admin-layout">
+  {% include 'sidebar.html' %}
+  <div class="main-content">
+    <div class="content-header">
+      <h1>Registraties</h1>
+      <div class="toolbar">
+        <a href="/add-entry" class="btn btn-sm btn-primary">+ Toevoegen</a>
+        <a href="/export/csv" class="btn btn-sm">↓ CSV</a>
+        <a href="/export/uren" class="btn btn-sm">↓ Uren</a>
+      </div>
+    </div>
+    <div class="content-body">
+
+      <form method="GET" class="filters-bar">
+        <div class="form-group">
+          <label class="form-label">Zoeken</label>
+          <input type="text" name="q" class="form-input" value="{{ search }}" placeholder="Naam of code…">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Datum</label>
+          <input type="date" name="date" class="form-input" value="{{ date_filter }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Medewerker</label>
+          <select name="employee" class="form-select">
+            <option value="">Alle</option>
+            {% for emp in employees_list %}
+            <option value="{{ emp.code }}" {% if employee_filter == emp.code %}selected{% endif %}>{{ emp.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group" style="display:flex; align-items:flex-end; gap:8px;">
+          <button type="submit" class="btn btn-primary btn-sm">Filteren</button>
+          {% if search or date_filter or employee_filter %}
+          <a href="/logs" class="btn btn-sm">Wissen</a>
+          {% endif %}
+        </div>
+      </form>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Code</th>
+                <th>Naam</th>
+                <th>Actie</th>
+                <th>Tijdstip</th>
+                <th>Reden</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in rows %}
+              <tr id="row-{{ row['id'] }}">
+                <td class="text-hint text-mono">{{ row['id'] }}</td>
+                <td class="text-mono">{{ row['code'] }}</td>
+                <td>{{ row['name'] if row['name'] else '—' }}</td>
+                <td>
+                  {% set badge_class = "badge-in" if row["action"] == "in" else ("badge-out" if row["action"] == "uit" else "badge-pause") %}<span class="badge {{ badge_class }}">
+                    {{ row['action']|upper }}
+                  </span>
+                </td>
+                <td class="text-mono">{{ row['timestamp'] }}</td>
+                <td class="text-muted" style="font-size:12px; max-width:120px; overflow:hidden; text-overflow:ellipsis;">{{ row['reason'] or '' }}</td>
+                <td class="text-right" style="white-space:nowrap;">
+                  <a href="/edit-entry/{{ row['id'] }}" class="btn btn-sm">Bewerken</a>
+                  <button class="btn btn-sm btn-danger" onclick="deleteEntry({{ row['id'] }})">Verwijderen</button>
+                </td>
+              </tr>
+              {% else %}
+              <tr><td colspan="7" style="text-align:center; padding:32px; color:var(--hint);">Geen registraties gevonden.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="flex-gap mt-8" style="justify-content:space-between; align-items:center;">
+        <div class="text-hint" style="font-size:12px;">{{ total_count }} registratie(s) · pagina {{ page }}/{{ total_pages }}</div>
+        {% if total_pages > 1 %}
+        <div class="flex-gap">
+          {% if page > 1 %}
+          <a href="/logs?page={{ page - 1 }}&q={{ search }}&date={{ date_filter }}&employee={{ employee_filter }}" class="btn btn-sm">← Vorige</a>
+          {% endif %}
+          {% if page < total_pages %}
+          <a href="/logs?page={{ page + 1 }}&q={{ search }}&date={{ date_filter }}&employee={{ employee_filter }}" class="btn btn-sm">Volgende →</a>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  async function deleteEntry(id) {
+    if (!confirm('Weet je zeker dat je deze registratie wilt verwijderen?')) return;
+    const res = await fetch('/delete-entry/' + id, { method: 'POST' });
+    const data = await res.json();
+    if (res.ok) {
+      const row = document.getElementById('row-' + id);
+      if (row) row.remove();
+    } else {
+      alert(data.message || 'Verwijderen mislukt.');
+    }
+  }
+</script>
+</body>
+</html>

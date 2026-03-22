@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard – Tijdregistratie</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="admin-layout">
+  {% include 'sidebar.html' %}
+  <div class="main-content">
+    <div class="content-header">
+      <h1>Dashboard</h1>
+      <div class="flex-gap">
+        <span class="text-muted" style="font-size:13px;">Vandaag · {{ today }}</span>
+        <span id="refresh-indicator" class="text-hint" style="font-size:11px;"></span>
+        <span id="alert-badge" style="display:none;"></span>
+      </div>
+    </div>
+    <div class="content-body">
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Ingeklokt nu</div>
+          <div class="stat-value" id="stat-clocked">{{ clocked_in|length }}</div>
+          <div class="stat-sub">van {{ total_employees }} actief</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Op pauze</div>
+          <div class="stat-value" id="stat-break">{{ on_break|length }}</div>
+          <div class="stat-sub">medewerkers</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Registraties vandaag</div>
+          <div class="stat-value">{{ today_count }}</div>
+          <div class="stat-sub">klok-acties</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Actieve medewerkers</div>
+          <div class="stat-value">{{ total_employees }}</div>
+          <div class="stat-sub">in het systeem</div>
+        </div>
+      </div>
+
+      <!-- Alert strip -->
+      <div id="alerts-strip" style="margin-bottom:16px;"></div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <h2>Momenteel ingeklokt</h2>
+            <span class="badge badge-in">{{ clocked_in|length }} actief</span>
+          </div>
+          <div class="card-body" id="clocked-list">
+            {% if clocked_in %}
+            <div class="clocked-list">
+              {% for emp in clocked_in %}
+              <div class="clocked-item">
+                <span class="clocked-name">{{ emp.name }}</span>
+                <span class="clocked-since">sinds {{ emp.since }}</span>
+              </div>
+              {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-muted" style="font-size:14px;">Niemand is momenteel ingeklokt.</p>
+            {% endif %}
+            {% if on_break %}
+            <div style="margin-top:12px;">
+              <div class="text-hint" style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">Op pauze</div>
+              <div class="clocked-list">
+                {% for emp in on_break %}
+                <div class="clocked-item" style="background:var(--amber-bg);border-color:var(--amber-border);border-left-color:var(--amber-border);">
+                  <span class="clocked-name">{{ emp.name }}</span>
+                  <span class="clocked-since">pauze sinds {{ emp.since }}</span>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h2>Uren deze week</h2></div>
+          <div class="card-body">
+            {% if weekly_hours %}
+            <table>
+              <thead><tr><th>Medewerker</th><th class="text-right">Uren</th></tr></thead>
+              <tbody>
+                {% for emp in weekly_hours %}
+                <tr>
+                  <td>{{ emp.name }}</td>
+                  <td class="text-right text-mono">{{ emp.label }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted" style="font-size:14px;">Geen registraties deze week.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<script>
+// Auto-load alerts on dashboard
+async function checkAlerts() {
+  try {
+    const res = await fetch('/api/alerts');
+    const data = await res.json();
+    const badge = document.getElementById('alert-badge');
+    const strip = document.getElementById('alerts-strip');
+    if (data.alerts.length > 0) {
+      badge.style.display = 'inline-flex';
+      badge.className = 'badge badge-inactive';
+      badge.textContent = data.alerts.length + ' waarschuwing' + (data.alerts.length > 1 ? 'en' : '');
+      strip.innerHTML = data.alerts.map(a =>
+        `<div class="alert alert-error" style="margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+          <span><strong>${a.name}</strong> — ${a.since ? 'ingeklokt sinds ' + a.since + ' · ' : ''}${a.reasons.join(' · ')}</span>
+        </div>`
+      ).join('');
+    } else {
+      badge.style.display = 'none';
+      strip.innerHTML = '';
+    }
+  } catch {}
+}
+
+// Auto-refresh entire page every 60 seconds
+let refreshCount = 0;
+function autoRefresh() {
+  refreshCount++;
+  document.getElementById('refresh-indicator').textContent = `auto-refresh ${refreshCount}×`;
+  location.reload();
+}
+
+checkAlerts();
+setInterval(checkAlerts, 30000);
+setInterval(autoRefresh, 60000);
+</script>
+</body>
+</html>

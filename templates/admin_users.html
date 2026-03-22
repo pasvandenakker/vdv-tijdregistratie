@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin-gebruikers – Tijdregistratie</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="admin-layout">
+  {% include 'sidebar.html' %}
+  <div class="main-content">
+    <div class="content-header">
+      <h1>Admin-gebruikers</h1>
+    </div>
+    <div class="content-body">
+
+      {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+      {% if success %}<div class="alert alert-success">{{ success }}</div>{% endif %}
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><h2>Nieuwe admin toevoegen</h2></div>
+          <div class="card-body">
+            <form method="POST">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="_action" value="add">
+              <div class="form-group">
+                <label class="form-label">Gebruikersnaam</label>
+                <input type="text" name="username" class="form-input mono" placeholder="bijv. jan" maxlength="20" required
+                  pattern="[a-z0-9_]{2,20}" title="Kleine letters, cijfers, underscore (2-20 tekens)">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Weergavenaam</label>
+                <input type="text" name="display_name" class="form-input" placeholder="Jan de Vries" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Wachtwoord</label>
+                <input type="password" name="password" class="form-input" minlength="6" required>
+              </div>
+              <button type="submit" class="btn btn-primary">Toevoegen</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><h2>Alle admins</h2></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Gebruikersnaam</th>
+                  <th>Naam</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for user in users %}
+                <tr>
+                  <td class="text-mono">{{ user['username'] }}</td>
+                  <td>{{ user['display_name'] }}</td>
+                  <td>
+                    <span class="badge {% if user['active'] %}badge-active{% else %}badge-inactive{% endif %}">
+                      {% if user['active'] %}Actief{% else %}Inactief{% endif %}
+                    </span>
+                  </td>
+                  <td>
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                      <form method="POST" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <input type="hidden" name="id" value="{{ user['id'] }}">
+                        {% if user['active'] %}
+                        <input type="hidden" name="_action" value="deactivate">
+                        <button type="submit" class="btn btn-sm btn-danger">Deactiveer</button>
+                        {% else %}
+                        <input type="hidden" name="_action" value="activate">
+                        <button type="submit" class="btn btn-sm">Activeer</button>
+                        {% endif %}
+                      </form>
+                      <form method="POST" style="display:flex; gap:4px; align-items:center;"
+                            onsubmit="return this.new_password.value.length >= 6 || (alert('Min. 6 tekens'), false)">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <input type="hidden" name="_action" value="reset_password">
+                        <input type="hidden" name="id" value="{{ user['id'] }}">
+                        <input type="password" name="new_password" class="form-input" placeholder="Nieuw ww"
+                          style="width:110px; padding:4px 8px; font-size:12px;">
+                        <button type="submit" class="btn btn-sm">Reset</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

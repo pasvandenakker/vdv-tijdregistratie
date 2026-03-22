@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Roosters – Tijdregistratie</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="admin-layout">
+  {% include 'sidebar.html' %}
+  <div class="main-content">
+    <div class="content-header">
+      <h1>Roosters</h1>
+    </div>
+    <div class="content-body">
+
+      {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+      {% if success %}<div class="alert alert-success">{{ success }}</div>{% endif %}
+
+      <div class="grid-2" style="align-items:start;">
+
+        <!-- Employee picker -->
+        <div>
+          <div class="card" style="margin-bottom:16px;">
+            <div class="card-header"><h2>Medewerker</h2></div>
+            <div class="card-body" style="padding:8px 0;">
+              {% for emp in employees_list %}
+              <a href="/roosters?emp={{ emp.code }}"
+                 class="nav-link {% if emp.code == selected_code %}active{% endif %}"
+                 style="border-left:none; padding:10px 20px; display:flex; justify-content:space-between; align-items:center; text-decoration:none; color:var(--text);">
+                <span>{{ emp.name }}</span>
+                {% if emp.code in schedules %}
+                <span class="badge badge-in" style="font-size:11px;">Rooster</span>
+                {% else %}
+                <span class="badge badge-out" style="font-size:11px;">Geen</span>
+                {% endif %}
+              </a>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Rooster kopiëren -->
+          <div class="card">
+            <div class="card-header"><h2>Rooster kopiëren</h2></div>
+            <div class="card-body">
+              <form method="POST" action="/roosters?emp={{ selected_code }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="_action" value="copy">
+                <div class="form-group">
+                  <label class="form-label">Kopieer van</label>
+                  <select name="source_code" class="form-select">
+                    {% for emp in employees_list %}
+                    {% if emp.code in schedules %}
+                    <option value="{{ emp.code }}">{{ emp.name }}</option>
+                    {% endif %}
+                    {% endfor %}
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Naar</label>
+                  <select name="target_code" class="form-select">
+                    {% for emp in employees_list %}
+                    <option value="{{ emp.code }}" {% if emp.code == selected_code %}selected{% endif %}>{{ emp.name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm"
+                  onclick="return confirm('Bestaand rooster van de doelmedewerker wordt overschreven. Doorgaan?')">
+                  Kopiëren
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Schedule editor -->
+        {% set emp_schedule = schedules.get(selected_code, {}) %}
+        {% set selected_name = (employees_list | selectattr('code','equalto',selected_code) | first).name if selected_code else '' %}
+        <div class="card">
+          <div class="card-header">
+            <h2>{{ selected_name }}</h2>
+            <span class="text-hint text-mono" style="font-size:12px;">{{ selected_code }}</span>
+          </div>
+          <div class="card-body">
+            {% if selected_code %}
+            <form method="POST" action="/roosters?emp={{ selected_code }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="_action" value="save">
+              <input type="hidden" name="emp_code" value="{{ selected_code }}">
+
+              <table style="width:100%; border-collapse:collapse;">
+                <thead>
+                  <tr>
+                    <th style="text-align:left; padding:8px 0; font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); width:110px;">Dag</th>
+                    <th style="text-align:left; padding:8px 4px; font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted);">Werkt</th>
+                    <th style="text-align:left; padding:8px 4px; font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted);">Van</th>
+                    <th style="text-align:left; padding:8px 4px; font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted);">Tot</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for day_idx in range(7) %}
+                  {% set day_data = emp_schedule.get(day_idx, {}) %}
+                  {% set is_active = day_data != {} %}
+                  <tr style="border-top:1px solid var(--border);">
+                    <td style="padding:10px 0; font-weight:500; font-size:14px;">{{ days[day_idx] }}</td>
+                    <td style="padding:10px 4px;">
+                      <label class="toggle-wrap" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                        <input type="checkbox" name="active_{{ day_idx }}" value="1"
+                          {% if is_active %}checked{% endif %}
+                          onchange="toggleDay({{ day_idx }}, this.checked)"
+                          style="width:16px;height:16px;cursor:pointer;">
+                      </label>
+                    </td>
+                    <td style="padding:10px 4px;">
+                      <input type="time" name="start_{{ day_idx }}"
+                        id="start_{{ day_idx }}"
+                        value="{{ day_data.start if is_active else '08:00' }}"
+                        class="form-input mono" style="width:100px; padding:6px 8px;"
+                        {% if not is_active %}disabled{% endif %}>
+                    </td>
+                    <td style="padding:10px 4px;">
+                      <input type="time" name="end_{{ day_idx }}"
+                        id="end_{{ day_idx }}"
+                        value="{{ day_data.end if is_active else '17:00' }}"
+                        class="form-input mono" style="width:100px; padding:6px 8px;"
+                        {% if not is_active %}disabled{% endif %}>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+
+              <div class="flex-gap mt-16" style="margin-top:20px;">
+                <button type="submit" class="btn btn-primary">Rooster opslaan</button>
+                {% if emp_schedule %}
+                <button type="submit" name="_action" value="delete" class="btn btn-danger"
+                  onclick="return confirm('Rooster verwijderen?')">Verwijderen</button>
+                {% endif %}
+              </div>
+            </form>
+            {% else %}
+            <p class="text-muted">Selecteer een medewerker links.</p>
+            {% endif %}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+function toggleDay(idx, active) {
+  document.getElementById('start_' + idx).disabled = !active;
+  document.getElementById('end_' + idx).disabled = !active;
+}
+</script>
+</body>
+</html>

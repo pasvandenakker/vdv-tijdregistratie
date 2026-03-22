@@ -1,0 +1,26 @@
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <img src="{{ url_for('static', filename='vdv_logo.png') }}" alt="Van der Vleuten Kunststofindustrie">
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-section">Overzicht</div>
+    <a href="/dashboard"    class="nav-link {% if request.path == '/dashboard'    %}active{% endif %}"><span class="nav-icon">⬡</span> Dashboard</a>
+    <a href="/logs"         class="nav-link {% if request.path == '/logs'         %}active{% endif %}"><span class="nav-icon">☰</span> Registraties</a>
+    <a href="/rapport"      class="nav-link {% if request.path == '/rapport'      %}active{% endif %}"><span class="nav-icon">◷</span> Urenoverzicht</a>
+    <div class="nav-section">Beheer</div>
+    <a href="/employees"    class="nav-link {% if request.path == '/employees'    %}active{% endif %}"><span class="nav-icon">○</span> Medewerkers</a>
+    <a href="/roosters"     class="nav-link {% if request.path == '/roosters'     %}active{% endif %}"><span class="nav-icon">▦</span> Roosters</a>
+    <a href="/admin-users"  class="nav-link {% if request.path == '/admin-users'  %}active{% endif %}"><span class="nav-icon">◉</span> Admins</a>
+    <a href="/instellingen" class="nav-link {% if request.path == '/instellingen' %}active{% endif %}"><span class="nav-icon">◎</span> Instellingen</a>
+    <div class="nav-section">Export & Systeem</div>
+    <a href="/export/excel" class="nav-link" style="color:rgba(255,255,255,0.9);font-weight:500;"><span class="nav-icon">⊞</span> Excel (gestijld)</a>
+    <a href="/export/csv"   class="nav-link"><span class="nav-icon">↓</span> Registraties CSV</a>
+    <a href="/export/uren"  class="nav-link"><span class="nav-icon">↓</span> Uren CSV</a>
+    <a href="/backup/db"    class="nav-link"><span class="nav-icon">⬇</span> DB Backup</a>
+    <a href="/audit-log"    class="nav-link {% if request.path == '/audit-log'    %}active{% endif %}"><span class="nav-icon">⊡</span> Audit log</a>
+  </div>
+  <div class="sidebar-footer">
+    <span style="color:rgba(255,255,255,0.5);font-size:11px;">{{ session.get('admin_display', 'Admin') }}</span><br>
+    <a href="/">← Kiosk</a> &nbsp;·&nbsp; <a href="/admin/logout">Uitloggen</a>
+  </div>
+</nav>

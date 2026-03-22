@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beheer – Tijdregistratie</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="login-page">
+  <div class="login-card">
+    <div class="login-card-logo">
+      <img src="{{ url_for('static', filename='vdv_logo.png') }}" alt="Van der Vleuten">
+    </div>
+    <div class="login-card-body">
+      <div class="login-title">Beheer</div>
+      <div class="login-sub">Log in om door te gaan</div>
+      {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+      <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="form-group">
+          <label class="form-label" for="username">Gebruikersnaam</label>
+          <input type="text" id="username" name="username" class="form-input" value="admin" autofocus>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="password">Wachtwoord</label>
+          <input type="password" id="password" name="password" class="form-input" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:11px;">
+          Inloggen
+        </button>
+      </form>
+      <div class="mt-16" style="text-align:center;">
+        <a href="/" style="font-size:12px;color:var(--hint);text-decoration:none;">← Terug naar inklokken</a>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

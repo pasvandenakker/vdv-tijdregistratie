@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Urenoverzicht – Tijdregistratie</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="admin-layout">
+  {% include 'sidebar.html' %}
+  <div class="main-content">
+    <div class="content-header">
+      <h1>Urenoverzicht</h1>
+      <div class="toolbar">
+        <a href="/export/uren?from={{ date_from }}&to={{ date_to }}{% if emp_filter %}&employee={{ emp_filter }}{% endif %}" class="btn btn-sm">↓ CSV exporteren</a>
+      </div>
+    </div>
+    <div class="content-body">
+
+      <form method="GET" class="filters-bar" style="margin-bottom:24px;">
+        <div class="form-group">
+          <label class="form-label">Van</label>
+          <input type="date" name="from" class="form-input" value="{{ date_from }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tot</label>
+          <input type="date" name="to" class="form-input" value="{{ date_to }}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Medewerker</label>
+          <select name="employee" class="form-select">
+            <option value="">Alle</option>
+            {% for emp in employees_list %}
+            <option value="{{ emp.code }}" {% if emp_filter == emp.code %}selected{% endif %}>{{ emp.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group" style="display:flex;align-items:flex-end;">
+          <button type="submit" class="btn btn-primary btn-sm">Tonen</button>
+        </div>
+      </form>
+
+      {% if report %}
+        {% for emp in report %}
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-header">
+            <div>
+              <h2>{{ emp.name }}</h2>
+              <span class="text-hint" style="font-size:12px;">{{ emp.code }}</span>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:13px; color:var(--muted);">Totaal gewerkt</div>
+              <div class="text-mono" style="font-size:18px; font-weight:600;">{{ emp.total_worked }}</div>
+              {% if emp.total_breaks != '0u 00m' %}
+              <div style="font-size:12px; color:var(--muted);">Pauze: {{ emp.total_breaks }}</div>
+              {% endif %}
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Datum</th>
+                  <th class="text-right">Gewerkt (netto)</th>
+                  <th class="text-right">Pauze</th>
+                  <th class="text-right">Bar</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for day in emp.days %}
+                <tr>
+                  <td>{{ day.date }}</td>
+                  <td class="text-right text-mono">{{ day.worked }}</td>
+                  <td class="text-right text-mono text-muted">{{ day.breaks }}</td>
+                  <td class="text-right" style="width:160px; padding-right:20px;">
+                    <div style="background:var(--surface2);border-radius:4px;height:8px;overflow:hidden;">
+                      <div style="background:var(--text);height:100%;width:{{ [day.worked_sec / 28800 * 100, 100]|min|int }}%;border-radius:4px;"></div>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+              <tfoot>
+                <tr style="border-top:2px solid var(--border);">
+                  <td style="font-weight:600;">Totaal</td>
+                  <td class="text-right text-mono" style="font-weight:600;">{{ emp.total_worked }}</td>
+                  <td class="text-right text-mono text-muted">{{ emp.total_breaks }}</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="card">
+          <div class="card-body" style="text-align:center;padding:48px;color:var(--hint);">
+            Geen registraties gevonden voor de gekozen periode.
+          </div>
+        </div>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

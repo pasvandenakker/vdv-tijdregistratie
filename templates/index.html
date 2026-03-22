@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#1a3a56">
+  <title>In- &amp; Uitklokken</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    /* ── Reden overlay ─────────────────────────────── */
+    .reason-overlay {
+      display:none; position:fixed; inset:0;
+      background:rgba(26,58,86,0.65); backdrop-filter:blur(4px);
+      align-items:center; justify-content:center; z-index:200;
+    }
+    .reason-overlay.show { display:flex; }
+    .reason-card {
+      background:var(--surface); border-radius:var(--radius-lg);
+      padding:0 32px 28px; width:100%; max-width:400px;
+      box-shadow:var(--shadow-lg); animation:fadeIn 0.2s ease; overflow:hidden;
+    }
+    .reason-header {
+      padding:18px 0 14px;
+      border-bottom:3px solid var(--lime);
+      margin-bottom:20px;
+    }
+    .reason-late-badge {
+      display:inline-flex; align-items:center; gap:6px;
+      background:#fff3ec; color:#c04f00;
+      border:1px solid #f5c09a; border-radius:100px;
+      font-size:12px; font-weight:700; padding:4px 12px;
+      margin-bottom:10px; text-transform:uppercase; letter-spacing:.05em;
+    }
+    .reason-name { font-size:18px; font-weight:700; color:var(--blue-dark); margin-bottom:4px; }
+    .reason-info { font-size:13px; color:var(--muted); }
+    .reason-label { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-bottom:10px; display:block; }
+    .reason-options { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+    .reason-btn {
+      padding:14px 10px; font-size:14px; font-weight:600;
+      border:2px solid var(--border); border-radius:var(--radius);
+      background:var(--surface2); color:var(--text-mid);
+      cursor:pointer; transition:all 0.15s; font-family:'Outfit',sans-serif;
+      text-align:center; line-height:1.3;
+    }
+    .reason-btn:hover { border-color:var(--blue); background:var(--blue-light); color:var(--blue-dark); }
+    .reason-btn.selected { border-color:var(--blue-dark); background:var(--blue-dark); color:#fff; }
+    .reason-btn .reason-icon { font-size:20px; display:block; margin-bottom:4px; }
+    .reason-submit {
+      width:100%; padding:13px; font-size:15px; font-weight:700;
+      background:var(--blue-dark); color:#fff; border:none;
+      border-radius:var(--radius); cursor:pointer; font-family:'Outfit',sans-serif;
+      transition:opacity 0.15s; opacity:0.5; pointer-events:none;
+    }
+    .reason-submit.active { opacity:1; pointer-events:all; }
+    .reason-skip {
+      display:block; margin-top:10px; text-align:center;
+      font-size:12px; color:var(--hint); cursor:pointer;
+      background:none; border:none; font-family:'Outfit',sans-serif;
+      width:100%;
+    }
+    .reason-skip:hover { color:var(--muted); }
+
+    /* ── PIN overlay ───────────────────────────────── */
+    .pin-overlay {
+      display:none; position:fixed; inset:0;
+      background:rgba(26,58,86,0.65); backdrop-filter:blur(4px);
+      align-items:center; justify-content:center; z-index:100;
+    }
+    .pin-overlay.show { display:flex; }
+    .pin-card {
+      background:var(--surface); border-radius:var(--radius-lg);
+      padding:0 32px 28px; width:100%; max-width:360px;
+      text-align:center; box-shadow:var(--shadow-lg);
+      animation:fadeIn 0.2s ease; overflow:hidden;
+    }
+    .pin-card-logo { padding:16px 24px 12px; border-bottom:3px solid var(--lime); margin-bottom:18px; }
+    .pin-card-logo img { max-width:130px; height:auto; }
+    .pin-name { font-size:17px; font-weight:700; margin-bottom:3px; color:var(--blue-dark); }
+    .pin-sub  { font-size:13px; color:var(--muted); margin-bottom:20px; }
+    .pin-dots { display:flex; justify-content:center; gap:12px; margin-bottom:20px; }
+    .pin-dot  { width:13px; height:13px; border-radius:50%; border:2px solid var(--border-strong); background:transparent; transition:all .15s; }
+    .pin-dot.filled { background:var(--blue-dark); border-color:var(--blue-dark); }
+    .pin-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin-bottom:10px; }
+    .pin-key  { padding:14px; font-size:20px; font-weight:600; border:1px solid var(--border); border-radius:var(--radius); background:var(--surface2); cursor:pointer; transition:all .1s; font-family:'JetBrains Mono',monospace; color:var(--text); }
+    .pin-key:hover { background:var(--blue-light); border-color:var(--blue); }
+    .pin-key:active { transform:scale(.96); }
+    .pin-key.wide { grid-column:span 2; font-size:13px; font-family:'Outfit',sans-serif; font-weight:600; }
+    .pin-error { color:var(--red); font-size:13px; min-height:18px; margin-bottom:5px; }
+
+    /* ── Bevestigings-overlay ──────────────────────── */
+    .confirm-overlay {
+      display:none; position:fixed; inset:0;
+      background:rgba(26,58,86,0.55); backdrop-filter:blur(4px);
+      align-items:center; justify-content:center; z-index:300;
+    }
+    .confirm-overlay.show { display:flex; }
+    .confirm-card {
+      background:var(--surface); border-radius:var(--radius-lg);
+      padding:40px 36px; width:100%; max-width:380px;
+      text-align:center; box-shadow:var(--shadow-lg);
+      animation:confirmPop 0.35s cubic-bezier(.34,1.56,.64,1);
+    }
+    .confirm-check {
+      width:72px; height:72px; border-radius:50%;
+      background:var(--lime-light); border:3px solid var(--lime);
+      display:flex; align-items:center; justify-content:center;
+      margin:0 auto 18px; animation:confirmScale 0.4s ease 0.1s both;
+    }
+    .confirm-check svg { width:36px; height:36px; color:var(--lime-dark); }
+    .confirm-name { font-size:22px; font-weight:700; color:var(--blue-dark); margin-bottom:4px; }
+    .confirm-action { font-size:15px; color:var(--muted); margin-bottom:2px; }
+    .confirm-time { font-size:28px; font-weight:300; color:var(--blue-dark); font-family:'JetBrains Mono',monospace; margin-bottom:8px; }
+    .confirm-late { font-size:13px; color:var(--orange-dark); background:var(--orange-light); border:1px solid var(--orange-border); border-radius:100px; padding:4px 14px; display:inline-block; }
+
+    @keyframes confirmPop { from { opacity:0; transform:scale(0.85); } to { opacity:1; transform:scale(1); } }
+    @keyframes confirmScale { from { transform:scale(0); } to { transform:scale(1); } }
+
+    /* ── Weekoverzicht overlay ──────────────────────── */
+    .hours-overlay {
+      display:none; position:fixed; inset:0;
+      background:rgba(26,58,86,0.55); backdrop-filter:blur(4px);
+      align-items:center; justify-content:center; z-index:250;
+    }
+    .hours-overlay.show { display:flex; }
+    .hours-card {
+      background:var(--surface); border-radius:var(--radius-lg);
+      padding:0 32px 28px; width:100%; max-width:380px;
+      box-shadow:var(--shadow-lg); animation:fadeIn 0.2s ease; overflow:hidden;
+    }
+    .hours-header {
+      padding:18px 0 14px; border-bottom:3px solid var(--lime); margin-bottom:16px;
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .hours-title { font-size:16px; font-weight:700; color:var(--blue-dark); }
+    .hours-total { font-size:14px; font-weight:600; color:var(--lime-dark); font-family:'JetBrains Mono',monospace; }
+    .hours-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); font-size:14px; }
+    .hours-row:last-child { border-bottom:none; }
+    .hours-day { color:var(--text-mid); }
+    .hours-val { font-family:'JetBrains Mono',monospace; color:var(--blue-dark); font-weight:500; }
+    .hours-close { margin-top:14px; width:100%; padding:10px; font-size:14px; font-weight:600; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius); cursor:pointer; font-family:'Outfit',sans-serif; color:var(--text-mid); }
+    .hours-close:hover { background:var(--border); }
+
+    /* ── Dark mode toggle ──────────────────────────── */
+    .dark-toggle {
+      position:fixed; bottom:16px; right:16px; z-index:50;
+      width:36px; height:36px; border-radius:50%;
+      background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.2);
+      color:rgba(255,255,255,0.6); cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+      font-size:16px; transition:all 0.2s;
+    }
+    .dark-toggle:hover { background:rgba(255,255,255,0.25); color:#fff; }
+  </style>
+</head>
+<body>
+
+<!-- ── Bevestigings-overlay ──────────────────────────────────────────────── -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-card">
+    <div class="confirm-check">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+    </div>
+    <div class="confirm-name" id="confirm-name"></div>
+    <div class="confirm-action" id="confirm-action"></div>
+    <div class="confirm-time" id="confirm-time"></div>
+    <div class="confirm-late" id="confirm-late" style="display:none;"></div>
+  </div>
+</div>
+
+<!-- ── Weekoverzicht overlay ─────────────────────────────────────────────── -->
+<div class="hours-overlay" id="hours-overlay">
+  <div class="hours-card">
+    <div class="hours-header">
+      <span class="hours-title" id="hours-title">Mijn uren deze week</span>
+      <span class="hours-total" id="hours-total"></span>
+    </div>
+    <div id="hours-list"></div>
+    <button class="hours-close" onclick="document.getElementById('hours-overlay').classList.remove('show')">Sluiten</button>
+  </div>
+</div>
+
+<!-- ── Reden overlay (te laat) ──────────────────────────────────────────── -->
+<div class="reason-overlay" id="reason-overlay">
+  <div class="reason-card">
+    <div class="reason-header">
+      <div class="reason-late-badge">Te laat ingeklokt</div>
+      <div class="reason-name" id="reason-name">Medewerker</div>
+      <div class="reason-info" id="reason-info">Gepland: 08:00 · Actueel: 08:25 (25 min te laat)</div>
+    </div>
+    <span class="reason-label">Wat is de reden?</span>
+    <div class="reason-options">
+      <button class="reason-btn" onclick="selectReason('Te laat')">
+        <span class="reason-icon">⏰</span>Te laat
+      </button>
+      <button class="reason-btn" onclick="selectReason('Huisarts')">
+        <span class="reason-icon">🩺</span>Huisarts
+      </button>
+      <button class="reason-btn" onclick="selectReason('Tandarts')">
+        <span class="reason-icon">🦷</span>Tandarts
+      </button>
+      <button class="reason-btn" onclick="selectReason('Anders')">
+        <span class="reason-icon">💬</span>Anders
+      </button>
+    </div>
+    <button class="reason-submit" id="reason-submit" onclick="submitWithReason()">Bevestigen</button>
+    <button class="reason-skip" onclick="submitWithReason('Geen reden opgegeven')">Overslaan</button>
+  </div>
+</div>
+
+<!-- ── PIN overlay ──────────────────────────────────────────────────────── -->
+<div class="pin-overlay" id="pin-overlay">
+  <div class="pin-card">
+    <div class="pin-card-logo">
+      <img src="{{ url_for('static', filename='vdv_logo.png') }}" alt="Van der Vleuten">
+    </div>
+    <div class="pin-name" id="pin-name">Medewerker</div>
+    <div class="pin-sub">Voer je persoonlijke PIN in</div>
+    <div class="pin-dots" id="pin-dots">
+      <div class="pin-dot"></div><div class="pin-dot"></div>
+      <div class="pin-dot"></div><div class="pin-dot"></div>
+    </div>
+    <div class="pin-error" id="pin-error"></div>
+    <div class="pin-grid">
+      <button class="pin-key" onclick="addPin('1')">1</button>
+      <button class="pin-key" onclick="addPin('2')">2</button>
+      <button class="pin-key" onclick="addPin('3')">3</button>
+      <button class="pin-key" onclick="addPin('4')">4</button>
+      <button class="pin-key" onclick="addPin('5')">5</button>
+      <button class="pin-key" onclick="addPin('6')">6</button>
+      <button class="pin-key" onclick="addPin('7')">7</button>
+      <button class="pin-key" onclick="addPin('8')">8</button>
+      <button class="pin-key" onclick="addPin('9')">9</button>
+      <button class="pin-key wide" onclick="cancelPin()">Annuleren</button>
+      <button class="pin-key" onclick="addPin('0')">0</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Kiosk ────────────────────────────────────────────────────────────── -->
+<div class="kiosk-page">
+  <div class="kiosk-card">
+    <div class="kiosk-logo-header">
+      <img src="{{ url_for('static', filename='vdv_logo.png') }}" alt="Van der Vleuten Kunststofindustrie">
+      <div class="kiosk-logo-sub">Tijdregistratie medewerkers</div>
+    </div>
+    <div class="kiosk-content">
+      <div class="kiosk-time" id="clock">--:--:--</div>
+      <div class="kiosk-date" id="date">--</div>
+      <div id="schedule-hint" class="schedule-hint"></div>
+      <div class="kiosk-input-wrap">
+        <input type="tel" id="code" class="kiosk-input" placeholder="Medewerkerscode"
+          maxlength="20" autocomplete="off" autofocus>
+      </div>
+      <div class="kiosk-buttons">
+        <button class="btn-kiosk btn-in"  onclick="sendClock('in')">Inklokken</button>
+        <button class="btn-kiosk btn-out" onclick="sendClock('uit')">Uitklokken</button>
+      </div>
+      <button class="break-btn" id="break-btn" onclick="handleBreak()">⏸ Pauze</button>
+      <div class="kiosk-status" id="status-wrap"><span id="status"></span></div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:18px;">
+        <a href="/admin/login" class="kiosk-admin-link" style="margin:0;">Beheer →</a>
+        <button class="kiosk-admin-link" id="hours-btn" style="display:none; border:none; background:none; cursor:pointer; margin:0;" onclick="showMyHours()">Mijn uren →</button>
+      </div>
+    </div>
+  </div>
+  <button class="dark-toggle" onclick="toggleDark()" title="Donkere/lichte modus">◑</button>
+</div>
+
+<script>
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
+
+  // ── Dark mode ───────────────────────────────────────────────────────────────
+  function toggleDark() {
+    document.documentElement.classList.toggle('dark-mode');
+    localStorage.setItem('darkMode', document.documentElement.classList.contains('dark-mode') ? '1' : '0');
+  }
+  if (localStorage.getItem('darkMode') === '1' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark-mode');
+  }
+
+  // ── Klok ───────────────────────────────────────────────────────────────────
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('clock').textContent =
+      now.toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    document.getElementById('date').textContent =
+      now.toLocaleDateString('nl-NL',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  }
+  updateClock(); setInterval(updateClock, 1000);
+
+  // ── Enter-toets ────────────────────────────────────────────────────────────
+  let lastAction = null;
+  document.getElementById('code').addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendClock(lastAction || 'in');
+  });
+
+  // ── Live status + rooster hint ─────────────────────────────────────────────
+  let scheduleTimer = null;
+  document.getElementById('code').addEventListener('input', async function() {
+    const code = this.value.trim();
+    const hint = document.getElementById('schedule-hint');
+    const breakBtn = document.getElementById('break-btn');
+    const hoursBtn = document.getElementById('hours-btn');
+    hint.style.display='none'; breakBtn.style.display='none'; hoursBtn.style.display='none';
+    if (code.length < 2) return;
+    clearTimeout(scheduleTimer);
+    scheduleTimer = setTimeout(async () => {
+      try {
+        const [sr, scr] = await Promise.all([
+          fetch('/status/'+encodeURIComponent(code)),
+          fetch('/api/schedule-today/'+encodeURIComponent(code))
+        ]);
+        if (sr.ok) {
+          const d = await sr.json();
+          hoursBtn.style.display = 'block';
+          if (d.status==='in') { breakBtn.style.display='block'; breakBtn.textContent='⏸ Pauze starten'; }
+          else if (d.status==='pauze_in') { breakBtn.style.display='block'; breakBtn.textContent='▶ Pauze beëindigen'; }
+        }
+        if (scr.ok) {
+          const s = await scr.json();
+          if (s.start && s.end) {
+            hint.style.display='block';
+            hint.textContent='Rooster vandaag: '+s.start+' – '+s.end;
+          }
+        }
+      } catch {}
+    }, 400);
+  });
+
+  function handleBreak() {
+    const code = document.getElementById('code').value.trim();
+    if (!code) { showStatus('Voer eerst een code in.','error'); return; }
+    sendClock(document.getElementById('break-btn').textContent.includes('beëindigen')?'pauze_uit':'pauze_in');
+  }
+
+  // ── Weekoverzicht ─────────────────────────────────────────────────────────
+  async function showMyHours() {
+    const code = document.getElementById('code').value.trim();
+    if (!code) return;
+    try {
+      const res = await fetch('/api/my-hours/' + encodeURIComponent(code));
+      if (!res.ok) return;
+      const data = await res.json();
+      document.getElementById('hours-title').textContent = data.name + ' — deze week';
+      document.getElementById('hours-total').textContent = data.total;
+      document.getElementById('hours-list').innerHTML = data.days.map(d =>
+        `<div class="hours-row"><span class="hours-day">${d.day} ${d.date.substring(5)}</span><span class="hours-val">${d.hours}</span></div>`
+      ).join('');
+      document.getElementById('hours-overlay').classList.add('show');
+    } catch {}
+  }
+
+  // ── State ──────────────────────────────────────────────────────────────────
+  let pendingCode=null, pendingAction=null, pendingPin=null;
+  let pinDigits=[], selectedReason=null;
+
+  // ── Bevestigingsscherm ─────────────────────────────────────────────────────
+  function showConfirmation(data) {
+    const actionLabels = {in:'Ingeklokt', uit:'Uitgeklokt', pauze_in:'Pauze gestart', pauze_uit:'Pauze beëindigd'};
+    document.getElementById('confirm-name').textContent = data.name;
+    document.getElementById('confirm-action').textContent = actionLabels[data.action] || data.action;
+    document.getElementById('confirm-time').textContent = data.time;
+    const lateEl = document.getElementById('confirm-late');
+    if (data.late) {
+      lateEl.style.display = 'inline-block';
+      lateEl.textContent = 'Te laat' + (data.reason ? ': ' + data.reason : '');
+    } else {
+      lateEl.style.display = 'none';
+    }
+    document.getElementById('confirm-overlay').classList.add('show');
+    setTimeout(() => document.getElementById('confirm-overlay').classList.remove('show'), 3000);
+  }
+
+  // ── Hoofdfunctie: inklokken ────────────────────────────────────────────────
+  async function sendClock(action, reason) {
+    lastAction = action;
+    const code = document.getElementById('code').value.trim();
+    if (!code) { showStatus('Voer eerst een code in.','error'); return; }
+
+    const btns = document.querySelectorAll('.btn-kiosk');
+    btns.forEach(b => b.disabled=true);
+
+    try {
+      const body = {code, action};
+      if (pendingPin)  body.pin    = pendingPin;
+      if (reason)      body.reason = reason;
+
+      const res  = await fetch('/clock',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      const data = await res.json();
+
+      if (data.status === 'pin_required') {
+        pendingCode=code; pendingAction=action; pinDigits=[];
+        document.getElementById('pin-name').textContent = data.name;
+        document.getElementById('pin-error').textContent = '';
+        updatePinDots();
+        document.getElementById('pin-overlay').classList.add('show');
+
+      } else if (data.status === 'reason_required') {
+        pendingCode=code; pendingAction=action; selectedReason=null;
+        document.getElementById('reason-name').textContent = data.name;
+        document.getElementById('reason-info').textContent =
+          `Gepland: ${data.scheduled} · Ingeklokt: ${data.actual} (${data.late_minutes} min te laat)`;
+        document.querySelectorAll('.reason-btn').forEach(b => b.classList.remove('selected'));
+        document.getElementById('reason-submit').classList.remove('active');
+        document.getElementById('reason-overlay').classList.add('show');
+
+      } else if (data.status === 'success') {
+        closeAll();
+        document.getElementById('code').value='';
+        document.getElementById('break-btn').style.display='none';
+        document.getElementById('schedule-hint').style.display='none';
+        document.getElementById('hours-btn').style.display='none';
+        showConfirmation(data);
+
+      } else {
+        showStatus(data.message,'error');
+      }
+    } catch { showStatus('Verbindingsfout. Probeer opnieuw.','error'); }
+    finally { btns.forEach(b=>b.disabled=false); }
+  }
+
+  // ── Reden selectie ─────────────────────────────────────────────────────────
+  function selectReason(r) {
+    selectedReason = r;
+    document.querySelectorAll('.reason-btn').forEach(b => {
+      b.classList.toggle('selected', b.textContent.trim().includes(r));
+    });
+    document.getElementById('reason-submit').classList.add('active');
+  }
+
+  async function submitWithReason(overrideReason) {
+    const reason = overrideReason || selectedReason;
+    document.getElementById('reason-overlay').classList.remove('show');
+    await sendClock(pendingAction, reason);
+  }
+
+  // ── PIN ────────────────────────────────────────────────────────────────────
+  function addPin(d) {
+    if (pinDigits.length>=8) return;
+    pinDigits.push(d); updatePinDots();
+    if (pinDigits.length>=4) { clearTimeout(window._pt); window._pt=setTimeout(submitPin,300); }
+  }
+
+  function updatePinDots() {
+    const total=Math.max(4,pinDigits.length), c=document.getElementById('pin-dots');
+    c.innerHTML='';
+    for (let i=0;i<total;i++) {
+      const d=document.createElement('div');
+      d.className='pin-dot'+(i<pinDigits.length?' filled':'');
+      c.appendChild(d);
+    }
+  }
+
+  async function submitPin() {
+    pendingPin = pinDigits.join('');
+    document.getElementById('pin-overlay').classList.remove('show');
+    const code = document.getElementById('code').value.trim();
+    const action = pendingAction;
+    try {
+      const res = await fetch('/clock',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({code, action, pin:pendingPin})});
+      const data = await res.json();
+
+      if (data.status === 'reason_required') {
+        pendingCode=code; pendingAction=action; selectedReason=null;
+        document.getElementById('reason-name').textContent = data.name;
+        document.getElementById('reason-info').textContent =
+          `Gepland: ${data.scheduled} · Ingeklokt: ${data.actual} (${data.late_minutes} min te laat)`;
+        document.querySelectorAll('.reason-btn').forEach(b=>b.classList.remove('selected'));
+        document.getElementById('reason-submit').classList.remove('active');
+        document.getElementById('reason-overlay').classList.add('show');
+      } else if (data.status === 'success') {
+        closeAll();
+        document.getElementById('code').value='';
+        document.getElementById('break-btn').style.display='none';
+        document.getElementById('schedule-hint').style.display='none';
+        document.getElementById('hours-btn').style.display='none';
+        showConfirmation(data);
+      } else if (data.status === 'error') {
+        pinDigits=[]; updatePinDots(); pendingPin=null;
+        document.getElementById('pin-error').textContent = data.message;
+        document.getElementById('pin-overlay').classList.add('show');
+        const card=document.querySelector('.pin-card');
+        card.style.animation='none'; card.offsetHeight; card.style.animation='shake 0.3s ease';
+      } else {
+        showStatus(data.message,'error');
+      }
+    } catch { showStatus('Verbindingsfout.','error'); }
+  }
+
+  function cancelPin() { closeAll(); }
+
+  function closeAll() {
+    document.getElementById('pin-overlay').classList.remove('show');
+    document.getElementById('reason-overlay').classList.remove('show');
+    document.getElementById('confirm-overlay').classList.remove('show');
+    document.getElementById('hours-overlay').classList.remove('show');
+    pendingCode=null; pendingAction=null; pendingPin=null;
+    pinDigits=[]; selectedReason=null;
+    document.getElementById('code').focus();
+  }
+
+  // ── Status pill ────────────────────────────────────────────────────────────
+  let clearTimer=null;
+  function showStatus(msg, type) {
+    const el=document.getElementById('status');
+    if (clearTimer) clearTimeout(clearTimer);
+    el.className='status-pill '+type;
+    el.innerHTML='<span class="status-dot"></span>'+msg;
+    clearTimer=setTimeout(()=>{el.textContent='';el.className='';},5500);
+  }
+</script>
+</body>
+</html>

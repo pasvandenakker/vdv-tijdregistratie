@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Instellingen – Tijdregistratie</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="admin-layout">
+  {% include 'sidebar.html' %}
+  <div class="main-content">
+    <div class="content-header">
+      <h1>Instellingen</h1>
+    </div>
+    <div class="content-body">
+
+      {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+      {% if success %}<div class="alert alert-success">{{ success }}</div>{% endif %}
+
+      <div class="grid-2">
+
+        <!-- Wachtwoord -->
+        <div class="card">
+          <div class="card-header"><h2>Wachtwoord wijzigen</h2></div>
+          <div class="card-body">
+            <form method="POST">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="_action" value="change_password">
+              <div class="form-group">
+                <label class="form-label">Huidig wachtwoord</label>
+                <input type="password" name="current_password" class="form-input" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Nieuw wachtwoord</label>
+                <input type="password" name="new_password" class="form-input" minlength="6" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Bevestigen</label>
+                <input type="password" name="confirm_password" class="form-input" required>
+              </div>
+              <button type="submit" class="btn btn-primary">Opslaan</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- PIN-modus -->
+        <div class="card">
+          <div class="card-header">
+            <h2>PIN-beveiliging kiosk</h2>
+            <span class="badge {% if pin_mode %}badge-in{% else %}badge-out{% endif %}">
+              {% if pin_mode %}Aan{% else %}Uit{% endif %}
+            </span>
+          </div>
+          <div class="card-body">
+            <p style="font-size:14px;color:var(--muted);margin-bottom:16px;">
+              Als PIN-modus is ingeschakeld moeten medewerkers na hun code ook hun persoonlijke PIN invoeren.
+            </p>
+            <form method="POST">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="_action" value="toggle_pin">
+              <button type="submit" class="btn {% if pin_mode %}btn-danger{% else %}btn-primary{% endif %}">
+                PIN-modus {% if pin_mode %}uitschakelen{% else %}inschakelen{% endif %}
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Alert drempel -->
+        <div class="card">
+          <div class="card-header"><h2>Notificatie-drempel</h2></div>
+          <div class="card-body">
+            <p style="font-size:14px;color:var(--muted);margin-bottom:16px;">
+              Toon een waarschuwing op het dashboard als iemand langer dan dit ingeklokt is.
+            </p>
+            <form method="POST" action="/instellingen/alerts">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <div class="form-group">
+                <label class="form-label">Maximum ingeklokt (minuten)</label>
+                <input type="number" name="threshold_minutes" class="form-input"
+                  value="{{ alert_threshold }}" min="30" max="1440" step="30" style="width:140px;">
+                <div class="text-hint mt-4" style="font-size:12px;">
+                  = {{ (alert_threshold / 60) | round(1) }} uur &nbsp;·&nbsp; standaard: 600 (10u)
+                </div>
+              </div>
+              <button type="submit" class="btn btn-primary">Opslaan</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Dashboard alerts live check -->
+        <div class="card">
+          <div class="card-header"><h2>Actieve waarschuwingen</h2></div>
+          <div class="card-body">
+            <div id="alerts-container">
+              <button class="btn btn-sm" onclick="loadAlerts()">Controleer nu</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- PIN per medewerker -->
+      <div class="card" style="margin-top:20px;">
+        <div class="card-header">
+          <h2>PIN per medewerker</h2>
+          <span class="text-hint" style="font-size:12px;">4–8 cijfers</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Code</th><th>Naam</th><th>PIN</th><th>Nieuwe PIN</th><th></th></tr></thead>
+            <tbody>
+              {% for emp in employees_list %}
+              <tr>
+                <td class="text-mono">{{ emp.code }}</td>
+                <td>{{ emp.name }}</td>
+                <td><span class="badge {% if emp.pin %}badge-in{% else %}badge-out{% endif %}">
+                  {% if emp.pin %}Ingesteld{% else %}Geen{% endif %}</span></td>
+                <td>
+                  <form method="POST" style="display:flex;gap:8px;align-items:center;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="_action" value="set_pin">
+                    <input type="hidden" name="emp_id" value="{{ emp.id }}">
+                    <input type="password" name="pin_value" class="form-input mono"
+                      placeholder="Nieuwe PIN" maxlength="8" pattern="\d{4,8}"
+                      style="width:130px;padding:6px 10px;font-size:13px;">
+                    <button type="submit" class="btn btn-sm btn-primary">Opslaan</button>
+                  </form>
+                </td>
+                <td>
+                  {% if emp.pin %}
+                  <form method="POST" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="_action" value="clear_pin">
+                    <input type="hidden" name="emp_id" value="{{ emp.id }}">
+                    <button type="submit" class="btn btn-sm btn-danger">Wissen</button>
+                  </form>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<script>
+async function loadAlerts() {
+  const container = document.getElementById('alerts-container');
+  container.innerHTML = '<span class="text-muted" style="font-size:13px;">Laden…</span>';
+  try {
+    const res = await fetch('/api/alerts');
+    const data = await res.json();
+    if (data.alerts.length === 0) {
+      container.innerHTML = '<div class="alert alert-success" style="margin:0;">Geen waarschuwingen — alles in orde.</div>';
+    } else {
+      container.innerHTML = data.alerts.map(a =>
+        `<div class="alert alert-error" style="margin-bottom:8px;">
+          <strong>${a.name}</strong> (code: ${a.code}) — ingeklokt sinds ${a.since}<br>
+          <span style="font-size:12px;">${a.reasons.join(' · ')}</span>
+        </div>`
+      ).join('');
+    }
+    container.innerHTML += `<div class="text-hint" style="font-size:11px;margin-top:8px;">Gecontroleerd om ${data.checked_at}</div>`;
+  } catch {
+    container.innerHTML = '<div class="alert alert-error">Fout bij ophalen.</div>';
+  }
+}
+</script>
+</body>
+</html>

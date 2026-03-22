@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registratie toevoegen</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="admin-layout">
+  {% include 'sidebar.html' %}
+  <div class="main-content">
+    <div class="content-header">
+      <h1>Registratie handmatig toevoegen</h1>
+      <a href="/logs" class="btn btn-sm">← Terug</a>
+    </div>
+    <div class="content-body">
+      <div class="card" style="max-width:520px;">
+        <div class="card-body">
+          {% if error_message %}<div class="alert alert-error">{{ error_message }}</div>{% endif %}
+          {% if success_message %}<div class="alert alert-success">{{ success_message }}</div>{% endif %}
+
+          <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <div class="form-group">
+              <label class="form-label" for="code">Medewerker</label>
+              <select name="code" id="code" class="form-select" required>
+                <option value="">— Selecteer —</option>
+                {% for emp in employees_list %}
+                <option value="{{ emp.code }}" {% if form_data.get('code') == emp.code %}selected{% endif %}>
+                  {{ emp.name }} ({{ emp.code }})
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="action">Actie</label>
+              <select name="action" id="action" class="form-select" required>
+                <option value="in"        {% if form_data.get('action') == 'in'        %}selected{% endif %}>IN</option>
+                <option value="uit"       {% if form_data.get('action') == 'uit'       %}selected{% endif %}>UIT</option>
+                <option value="pauze_in"  {% if form_data.get('action') == 'pauze_in'  %}selected{% endif %}>PAUZE IN</option>
+                <option value="pauze_uit" {% if form_data.get('action') == 'pauze_uit' %}selected{% endif %}>PAUZE UIT</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="timestamp">Tijdstip</label>
+              <input type="text" name="timestamp" id="timestamp" class="form-input mono"
+                value="{{ form_data.get('timestamp', '') }}" placeholder="JJJJ-MM-DD UU:MM:SS" required>
+              <div class="text-hint mt-4" style="font-size:12px;">Formaat: JJJJ-MM-DD UU:MM:SS</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="reason">Reden (optioneel)</label>
+              <input type="text" name="reason" id="reason" class="form-input"
+                value="{{ form_data.get('reason', '') or '' }}" placeholder="Bijv. vergeten in te klokken">
+            </div>
+            <div class="flex-gap mt-16">
+              <button type="submit" class="btn btn-primary">Toevoegen</button>
+              <a href="/logs" class="btn">Annuleren</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
