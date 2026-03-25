@@ -479,7 +479,7 @@
       bdEl.style.display = 'none';
     }
     overlay.classList.add('show');
-    const duration = data.birthday ? 8000 : 3000;
+    const duration = data.birthday ? (data.trakteer && data.action === 'in' ? 4000 : 8000) : 3000;
     setTimeout(() => {
       overlay.classList.remove('show','birthday'); stopConfetti();
       if (data.trakteer && data.action === 'in') showTrakteer(data.name, lang);
@@ -546,13 +546,13 @@
 
   // ── Trakteermenu ──────────────────────────────────────────────────────────
   const trakteerI18n = {
-    nl: {title:'Tijd om te trakteren, {name}!', sub:'Wat ga je trakteren?', close:'Sluiten',
+    nl: {title:'🎉 {name} trakteert!', sub:'Je collega\'s verwachten minimaal één van deze suggesties...', close:'Ik ga shoppen! 🛒',
          items:[{e:'🥐',l:'Worstenbroodjes'},{e:'🥧',l:'Vlaai'},{e:'🍫',l:'Bossche Bollen'},{e:'🍺',l:'Bier'}]},
-    en: {title:'Time to treat, {name}!', sub:'What are you bringing?', close:'Close',
+    en: {title:'🎉 {name} is treating!', sub:'Your colleagues expect at least one of these suggestions...', close:'I\'m going shopping! 🛒',
          items:[{e:'🥐',l:'Sausage rolls'},{e:'🥧',l:'Pie'},{e:'🍫',l:'Chocolate balls'},{e:'🍺',l:'Beer'}]},
-    de: {title:'Zeit zum Ausgeben, {name}!', sub:'Was gibt es?', close:'Schließen',
+    de: {title:'🎉 {name} gibt aus!', sub:'Deine Kollegen erwarten mindestens einen dieser Vorschläge...', close:'Ich gehe einkaufen! 🛒',
          items:[{e:'🥐',l:'Wurstbrötchen'},{e:'🥧',l:'Kuchen'},{e:'🍫',l:'Schokokugeln'},{e:'🍺',l:'Bier'}]},
-    pl: {title:'Czas na poczęstunek, {name}!', sub:'Co przyniesiesz?', close:'Zamknij',
+    pl: {title:'🎉 {name} stawia!', sub:'Twoi koledzy oczekują co najmniej jednej z tych propozycji...', close:'Idę na zakupy! 🛒',
          items:[{e:'🥐',l:'Bułki z kiełbasą'},{e:'🥧',l:'Placek'},{e:'🍫',l:'Czekoladowe kule'},{e:'🍺',l:'Piwo'}]},
   };
   function showTrakteer(name, lang) {
@@ -566,7 +566,7 @@
     ).join('');
     document.getElementById('trakteer-overlay').classList.add('show');
     launchConfetti();
-    setTimeout(closeTrakteer, 5000);
+    setTimeout(closeTrakteer, 10000);
   }
   function closeTrakteer() {
     document.getElementById('trakteer-overlay').classList.remove('show');
