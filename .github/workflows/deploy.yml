@@ -1,0 +1,32 @@
+name: Deploy naar PythonAnywhere
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # Handmatig triggeren mogelijk
+
+jobs:
+  deploy:
+    name: Deploy → PythonAnywhere
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy script draaien via console
+        run: |
+          response=$(curl -s -X POST \
+            "https://www.pythonanywhere.com/api/v0/user/${{ secrets.PA_USERNAME }}/consoles/" \
+            -H "Authorization: Token ${{ secrets.PA_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"executable\": \"bash\", \"arguments\": \"/home/${{ secrets.PA_USERNAME }}/vdv-tijdregistratie/deploy.sh\"}")
+          echo "Console response: $response"
+
+      - name: Web app herladen
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+            "https://www.pythonanywhere.com/api/v0/user/${{ secrets.PA_USERNAME }}/webapps/${{ secrets.PA_USERNAME }}.pythonanywhere.com/reload/" \
+            -H "Authorization: Token ${{ secrets.PA_API_TOKEN }}")
+          if [ "$status" = "200" ]; then
+            echo "✓ PythonAnywhere app herladen"
+          else
+            echo "✗ Herladen mislukt (HTTP $status)"
+            exit 1
+          fi
