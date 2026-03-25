@@ -145,6 +145,38 @@
     .confetti-canvas {
       position:fixed; inset:0; z-index:301; pointer-events:none;
     }
+    /* ── Trakteermenu ─────────────────────────────── */
+    .trakteer-overlay {
+      display:none; position:fixed; inset:0;
+      background:rgba(26,58,86,0.7); backdrop-filter:blur(6px);
+      align-items:center; justify-content:center; z-index:400;
+    }
+    .trakteer-overlay.show { display:flex; }
+    .trakteer-card {
+      background:linear-gradient(135deg, #fff8e1 0%, #ffffff 50%, #f0f7e4 100%);
+      border-radius:var(--radius-lg); padding:36px 32px;
+      width:100%; max-width:420px; text-align:center;
+      box-shadow:var(--shadow-lg); border:3px solid var(--lime);
+      animation:birthdayPop 0.5s cubic-bezier(.34,1.56,.64,1);
+    }
+    .trakteer-title { font-size:22px; font-weight:700; color:var(--blue-dark); margin-bottom:6px; }
+    .trakteer-sub { font-size:14px; color:var(--muted); margin-bottom:24px; }
+    .trakteer-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px; }
+    .trakteer-item {
+      padding:20px 12px; border:2px solid var(--border); border-radius:var(--radius);
+      background:var(--surface); cursor:default; transition:all 0.2s;
+      text-align:center;
+    }
+    .trakteer-item:hover { border-color:var(--lime); background:var(--lime-light); transform:scale(1.03); }
+    .trakteer-emoji { font-size:36px; display:block; margin-bottom:8px; }
+    .trakteer-label { font-size:14px; font-weight:600; color:var(--blue-dark); }
+    .trakteer-close {
+      width:100%; padding:12px; font-size:14px; font-weight:600;
+      background:var(--blue-dark); color:#fff; border:none;
+      border-radius:var(--radius); cursor:pointer; font-family:'Outfit',sans-serif;
+    }
+    .trakteer-close:hover { opacity:0.9; }
+
     @keyframes birthdayPop { from { opacity:0; transform:scale(0.7) rotate(-3deg); } to { opacity:1; transform:scale(1) rotate(0); } }
     @keyframes birthdayBounce { 0% { transform:scale(0); } 60% { transform:scale(1.2); } 100% { transform:scale(1); } }
     @keyframes birthdayFade { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
@@ -202,6 +234,34 @@
     <div class="confirm-time" id="confirm-time"></div>
     <div class="confirm-late" id="confirm-late" style="display:none;"></div>
     <div id="confirm-birthday" style="display:none;margin-top:12px;font-size:18px;"></div>
+  </div>
+</div>
+
+<!-- ── Trakteer overlay ────────────────────────────────────────────────── -->
+<div class="trakteer-overlay" id="trakteer-overlay">
+  <div class="trakteer-card">
+    <div style="font-size:48px;margin-bottom:8px;">🎉</div>
+    <div class="trakteer-title" id="trakteer-title">Tijd om te trakteren!</div>
+    <div class="trakteer-sub" id="trakteer-sub">Wat ga je trakteren?</div>
+    <div class="trakteer-grid">
+      <div class="trakteer-item">
+        <span class="trakteer-emoji">🥐</span>
+        <span class="trakteer-label">Worstenbroodjes</span>
+      </div>
+      <div class="trakteer-item">
+        <span class="trakteer-emoji">🥧</span>
+        <span class="trakteer-label">Vlaai</span>
+      </div>
+      <div class="trakteer-item">
+        <span class="trakteer-emoji">🍫</span>
+        <span class="trakteer-label">Bossche Bollen</span>
+      </div>
+      <div class="trakteer-item">
+        <span class="trakteer-emoji">🍺</span>
+        <span class="trakteer-label">Bier</span>
+      </div>
+    </div>
+    <button class="trakteer-close" onclick="closeTrakteer()">Sluiten</button>
   </div>
 </div>
 
@@ -437,7 +497,10 @@
     }
     overlay.classList.add('show');
     const duration = data.birthday ? 8000 : 3000;
-    setTimeout(() => { overlay.classList.remove('show','birthday'); stopConfetti(); }, duration);
+    setTimeout(() => {
+      overlay.classList.remove('show','birthday'); stopConfetti();
+      if (data.trakteer) showTrakteer(data.name, lang);
+    }, duration);
   }
 
   // ── Confetti ──────────────────────────────────────────────────────────────
@@ -496,6 +559,26 @@
   function stopConfetti() {
     if (confettiAnim) { cancelAnimationFrame(confettiAnim); confettiAnim = null; }
     document.querySelectorAll('.confetti-canvas').forEach(c => c.remove());
+  }
+
+  // ── Trakteermenu ──────────────────────────────────────────────────────────
+  const trakteerI18n = {
+    nl: {title:'Tijd om te trakteren, {name}!', sub:'Wat ga je trakteren?'},
+    en: {title:'Time to treat, {name}!', sub:'What are you bringing?'},
+    de: {title:'Zeit zum Ausgeben, {name}!', sub:'Was gibt es?'},
+    pl: {title:'Czas na poczęstunek, {name}!', sub:'Co przyniesiesz?'},
+  };
+  function showTrakteer(name, lang) {
+    const t = trakteerI18n[lang] || trakteerI18n.nl;
+    const firstName = name.split(' ')[0];
+    document.getElementById('trakteer-title').textContent = t.title.replace('{name}', firstName);
+    document.getElementById('trakteer-sub').textContent = t.sub;
+    document.getElementById('trakteer-overlay').classList.add('show');
+    launchConfetti();
+  }
+  function closeTrakteer() {
+    document.getElementById('trakteer-overlay').classList.remove('show');
+    stopConfetti();
   }
 
   // ── Hoofdfunctie: inklokken ────────────────────────────────────────────────

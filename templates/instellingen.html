@@ -66,6 +66,28 @@
           </div>
         </div>
 
+        <!-- Trakteermodule -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Trakteermodule</h2>
+            <span class="badge {% if trakteer_enabled %}badge-in{% else %}badge-out{% endif %}">
+              {% if trakteer_enabled %}Aan{% else %}Uit{% endif %}
+            </span>
+          </div>
+          <div class="card-body">
+            <p style="font-size:14px;color:var(--muted);margin-bottom:16px;">
+              Bij een verjaardag verschijnt na de felicitatie een traktatiesuggestie op het inklokscherm.
+            </p>
+            <form method="POST">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="_action" value="toggle_trakteer">
+              <button type="submit" class="btn {% if trakteer_enabled %}btn-danger{% else %}btn-primary{% endif %}">
+                Trakteermodule {% if trakteer_enabled %}uitschakelen{% else %}inschakelen{% endif %}
+              </button>
+            </form>
+          </div>
+        </div>
+
         <!-- Pauze-registratie -->
         <div class="card">
           <div class="card-header">

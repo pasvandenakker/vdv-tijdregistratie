@@ -149,6 +149,9 @@ def get_alert_threshold_minutes():
 def get_pauze_enabled():
     return get_setting("pauze_enabled", "1") == "1"
 
+def get_trakteer_enabled():
+    return get_setting("trakteer_enabled", "0") == "1"
+
 
 # ── Auth ─────────────────────────────────────────────────────────────────────
 
@@ -411,6 +414,13 @@ def instellingen():
             audit_log("toggle_pauze", "settings", "pauze_enabled", str(int(current_mode)), new_val)
             success = f"Pauze-registratie {'ingeschakeld' if new_val == '1' else 'uitgeschakeld'}."
 
+        elif act == "toggle_trakteer":
+            current_mode = get_trakteer_enabled()
+            new_val = "0" if current_mode else "1"
+            set_setting("trakteer_enabled", new_val)
+            audit_log("toggle_trakteer", "settings", "trakteer_enabled", str(int(current_mode)), new_val)
+            success = f"Trakteermodule {'ingeschakeld' if new_val == '1' else 'uitgeschakeld'}."
+
         elif act == "set_pin":
             emp_id = request.form.get("emp_id", "")
             pin_val = request.form.get("pin_value", "").strip()
@@ -436,9 +446,10 @@ def instellingen():
 
     alert_threshold = get_alert_threshold_minutes()
     pauze_enabled = get_pauze_enabled()
+    trakteer_enabled = get_trakteer_enabled()
     return render_template("instellingen.html",
-        pin_mode=pin_mode, pauze_enabled=pauze_enabled, employees_list=employees_list,
-        alert_threshold=alert_threshold,
+        pin_mode=pin_mode, pauze_enabled=pauze_enabled, trakteer_enabled=trakteer_enabled,
+        employees_list=employees_list, alert_threshold=alert_threshold,
         error=error, success=success)
 
 
@@ -608,7 +619,7 @@ def is_birthday(birthdate_str):
 
 @app.route("/")
 def index():
-    return render_template("index.html", pauze_enabled=get_pauze_enabled())
+    return render_template("index.html", pauze_enabled=get_pauze_enabled(), trakteer_enabled=get_trakteer_enabled())
 
 @app.route("/clock", methods=["POST"])
 def clock():
@@ -731,7 +742,8 @@ def clock():
         "late": late_info is not None,
         "reason": reason,
         "lang": lang,
-        "birthday": t(lang, "birthday") if birthday else None
+        "birthday": t(lang, "birthday") if birthday else None,
+        "trakteer": birthday and get_trakteer_enabled()
     })
 
 @app.route("/status/<code>")
