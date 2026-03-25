@@ -412,7 +412,7 @@
       } else if (data.status === 'success') {
         closeAll();
         document.getElementById('code').value='';
-        document.getElementById('break-btn').style.display='none';
+        const bb = document.getElementById('break-btn'); if(bb) bb.style.display='none';
         document.getElementById('schedule-hint').style.display='none';
         document.getElementById('hours-btn').style.display='none';
         showConfirmation(data);
@@ -477,7 +477,7 @@
       } else if (data.status === 'success') {
         closeAll();
         document.getElementById('code').value='';
-        document.getElementById('break-btn').style.display='none';
+        const bb = document.getElementById('break-btn'); if(bb) bb.style.display='none';
         document.getElementById('schedule-hint').style.display='none';
         document.getElementById('hours-btn').style.display='none';
         showConfirmation(data);
