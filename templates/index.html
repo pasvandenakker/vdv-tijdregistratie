@@ -243,25 +243,8 @@
     <div style="font-size:48px;margin-bottom:8px;">🎉</div>
     <div class="trakteer-title" id="trakteer-title">Tijd om te trakteren!</div>
     <div class="trakteer-sub" id="trakteer-sub">Wat ga je trakteren?</div>
-    <div class="trakteer-grid">
-      <div class="trakteer-item">
-        <span class="trakteer-emoji">🥐</span>
-        <span class="trakteer-label">Worstenbroodjes</span>
-      </div>
-      <div class="trakteer-item">
-        <span class="trakteer-emoji">🥧</span>
-        <span class="trakteer-label">Vlaai</span>
-      </div>
-      <div class="trakteer-item">
-        <span class="trakteer-emoji">🍫</span>
-        <span class="trakteer-label">Bossche Bollen</span>
-      </div>
-      <div class="trakteer-item">
-        <span class="trakteer-emoji">🍺</span>
-        <span class="trakteer-label">Bier</span>
-      </div>
-    </div>
-    <button class="trakteer-close" onclick="closeTrakteer()">Sluiten</button>
+    <div class="trakteer-grid" id="trakteer-grid"></div>
+    <button class="trakteer-close" id="trakteer-close-btn" onclick="closeTrakteer()">Sluiten</button>
   </div>
 </div>
 
@@ -563,16 +546,24 @@
 
   // ── Trakteermenu ──────────────────────────────────────────────────────────
   const trakteerI18n = {
-    nl: {title:'Tijd om te trakteren, {name}!', sub:'Wat ga je trakteren?'},
-    en: {title:'Time to treat, {name}!', sub:'What are you bringing?'},
-    de: {title:'Zeit zum Ausgeben, {name}!', sub:'Was gibt es?'},
-    pl: {title:'Czas na poczęstunek, {name}!', sub:'Co przyniesiesz?'},
+    nl: {title:'Tijd om te trakteren, {name}!', sub:'Wat ga je trakteren?', close:'Sluiten',
+         items:[{e:'🥐',l:'Worstenbroodjes'},{e:'🥧',l:'Vlaai'},{e:'🍫',l:'Bossche Bollen'},{e:'🍺',l:'Bier'}]},
+    en: {title:'Time to treat, {name}!', sub:'What are you bringing?', close:'Close',
+         items:[{e:'🥐',l:'Sausage rolls'},{e:'🥧',l:'Pie'},{e:'🍫',l:'Chocolate puffs'},{e:'🍺',l:'Beer'}]},
+    de: {title:'Zeit zum Ausgeben, {name}!', sub:'Was gibt es?', close:'Schließen',
+         items:[{e:'🥐',l:'Wurstbrötchen'},{e:'🥧',l:'Kuchen'},{e:'🍫',l:'Schokoküsse'},{e:'🍺',l:'Bier'}]},
+    pl: {title:'Czas na poczęstunek, {name}!', sub:'Co przyniesiesz?', close:'Zamknij',
+         items:[{e:'🥐',l:'Bułki z kiełbasą'},{e:'🥧',l:'Placek'},{e:'🍫',l:'Czekoladowe ptysie'},{e:'🍺',l:'Piwo'}]},
   };
   function showTrakteer(name, lang) {
     const t = trakteerI18n[lang] || trakteerI18n.nl;
     const firstName = name.split(' ')[0];
     document.getElementById('trakteer-title').textContent = t.title.replace('{name}', firstName);
     document.getElementById('trakteer-sub').textContent = t.sub;
+    document.getElementById('trakteer-close-btn').textContent = t.close;
+    document.getElementById('trakteer-grid').innerHTML = t.items.map(i =>
+      `<div class="trakteer-item"><span class="trakteer-emoji">${i.e}</span><span class="trakteer-label">${i.l}</span></div>`
+    ).join('');
     document.getElementById('trakteer-overlay').classList.add('show');
     launchConfetti();
   }
