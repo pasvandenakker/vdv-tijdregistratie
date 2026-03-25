@@ -118,6 +118,37 @@
     @keyframes confirmPop { from { opacity:0; transform:scale(0.85); } to { opacity:1; transform:scale(1); } }
     @keyframes confirmScale { from { transform:scale(0); } to { transform:scale(1); } }
 
+    /* ── Verjaardag modus ────────────────────────────── */
+    .confirm-overlay.birthday { background:rgba(26,58,86,0.7); }
+    .confirm-overlay.birthday .confirm-card {
+      max-width:460px; padding:48px 44px;
+      background:linear-gradient(135deg, #fff8e1 0%, #ffffff 40%, #f0f7e4 100%);
+      border:3px solid var(--lime);
+      animation:birthdayPop 0.5s cubic-bezier(.34,1.56,.64,1);
+    }
+    .confirm-overlay.birthday .confirm-check {
+      width:90px; height:90px;
+      background:linear-gradient(135deg, #fff3e0, #ffe0b2);
+      border:3px solid #ff9800;
+      animation:birthdayBounce 0.6s ease 0.2s both;
+    }
+    .confirm-overlay.birthday .confirm-check svg { display:none; }
+    .confirm-overlay.birthday .confirm-check::after {
+      content:'🎂'; font-size:42px; line-height:1;
+    }
+    .confirm-overlay.birthday .confirm-name { font-size:26px; }
+    .confirm-overlay.birthday .confirm-time { font-size:32px; }
+    #confirm-birthday {
+      font-size:20px; font-weight:700; color:#e65100;
+      animation:birthdayFade 0.5s ease 0.4s both;
+    }
+    .confetti-canvas {
+      position:fixed; inset:0; z-index:301; pointer-events:none;
+    }
+    @keyframes birthdayPop { from { opacity:0; transform:scale(0.7) rotate(-3deg); } to { opacity:1; transform:scale(1) rotate(0); } }
+    @keyframes birthdayBounce { 0% { transform:scale(0); } 60% { transform:scale(1.2); } 100% { transform:scale(1); } }
+    @keyframes birthdayFade { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
     /* ── Weekoverzicht overlay ──────────────────────── */
     .hours-overlay {
       display:none; position:fixed; inset:0;
@@ -370,6 +401,7 @@
   function showConfirmation(data) {
     const lang = data.lang || 'nl';
     const labels = i18nLabels[lang] || i18nLabels.nl;
+    const overlay = document.getElementById('confirm-overlay');
     document.getElementById('confirm-name').textContent = data.name;
     document.getElementById('confirm-action').textContent = labels[data.action] || data.action;
     document.getElementById('confirm-time').textContent = data.time;
@@ -382,13 +414,75 @@
     }
     const bdEl = document.getElementById('confirm-birthday');
     if (data.birthday) {
+      overlay.classList.add('birthday');
       bdEl.style.display = 'block';
       bdEl.textContent = data.birthday;
+      launchConfetti();
     } else {
+      overlay.classList.remove('birthday');
       bdEl.style.display = 'none';
     }
-    document.getElementById('confirm-overlay').classList.add('show');
-    setTimeout(() => document.getElementById('confirm-overlay').classList.remove('show'), data.birthday ? 6000 : 3000);
+    overlay.classList.add('show');
+    const duration = data.birthday ? 8000 : 3000;
+    setTimeout(() => { overlay.classList.remove('show','birthday'); stopConfetti(); }, duration);
+  }
+
+  // ── Confetti ──────────────────────────────────────────────────────────────
+  let confettiAnim = null;
+  function launchConfetti() {
+    stopConfetti();
+    const canvas = document.createElement('canvas');
+    canvas.className = 'confetti-canvas';
+    document.body.appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const colors = ['#8DC63F','#E8650A','#1A3A56','#FFD700','#FF6B6B','#4ECDC4','#FF69B4','#00D2FF'];
+    const pieces = [];
+    for (let i = 0; i < 150; i++) {
+      pieces.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height - canvas.height,
+        w: Math.random() * 10 + 5,
+        h: Math.random() * 6 + 3,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        vx: (Math.random() - 0.5) * 4,
+        vy: Math.random() * 3 + 2,
+        rot: Math.random() * 360,
+        rv: (Math.random() - 0.5) * 8,
+        shape: Math.random() > 0.5 ? 'rect' : 'circle',
+      });
+    }
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      pieces.forEach(p => {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot * Math.PI / 180);
+        ctx.fillStyle = p.color;
+        if (p.shape === 'circle') {
+          ctx.beginPath(); ctx.arc(0, 0, p.w / 2, 0, Math.PI * 2); ctx.fill();
+        } else {
+          ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        }
+        ctx.restore();
+        p.x += p.vx;
+        p.y += p.vy;
+        p.rot += p.rv;
+        p.vy += 0.05;
+        if (p.y > canvas.height + 20) {
+          p.y = -20;
+          p.x = Math.random() * canvas.width;
+          p.vy = Math.random() * 3 + 2;
+        }
+      });
+      confettiAnim = requestAnimationFrame(draw);
+    }
+    draw();
+  }
+  function stopConfetti() {
+    if (confettiAnim) { cancelAnimationFrame(confettiAnim); confettiAnim = null; }
+    document.querySelectorAll('.confetti-canvas').forEach(c => c.remove());
   }
 
   // ── Hoofdfunctie: inklokken ────────────────────────────────────────────────
