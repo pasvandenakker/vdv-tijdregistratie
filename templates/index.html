@@ -499,7 +499,7 @@
     const duration = data.birthday ? 8000 : 3000;
     setTimeout(() => {
       overlay.classList.remove('show','birthday'); stopConfetti();
-      if (data.trakteer) showTrakteer(data.name, lang);
+      if (data.trakteer && data.action === 'in') showTrakteer(data.name, lang);
     }, duration);
   }
 
