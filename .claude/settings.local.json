@@ -11,7 +11,10 @@
       "Bash(find 'G:/Mijn Drive/.Zelfstandige onderneming/VD Vleuten - Inkloksysteem' -maxdepth 2 -type f \\\\\\(-name *wsgi* -o -name Procfile -o -name *.sh -o -name *.cfg -o -name *.ini -o -name *.yml -o -name *.yaml \\\\\\))",
       "Bash(mv templates/icon-192.svg static/icon-192.svg)",
       "Bash(rm templates/VDV_Tijdregistratie_voorbeeld.xlsx)",
-      "Bash(xxd requirements.txt)"
+      "Bash(xxd requirements.txt)",
+      "Bash(python -c \"from app import app; print\\(''OK''\\)\")",
+      "Bash(pip install:*)",
+      "Bash(python -c \"from app import app; from excel_export import generate_excel; print\\(''OK''\\)\")"
     ]
   }
 }
