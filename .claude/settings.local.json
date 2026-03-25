@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(source venv/Scripts/activate)",
+      "Bash(python -c \":*)",
+      "Bash(python init_db.py)",
+      "Bash(python app.py)",
+      "Bash(find 'G:/Mijn Drive/.Zelfstandige onderneming/VD Vleuten - Inkloksysteem' -type f \\\\\\(-name *.py -o -name *.txt -o -name *.md -o -name *.yml -o -name *.yaml -o -name *.cfg -o -name *.ini -o -name *.json \\\\\\))",
+      "Bash(grep -r \"pythonanywhere\\\\|WSGI\\\\|wsgi\\\\|deployment\\\\|production\" 'G:/Mijn Drive/.Zelfstandige onderneming/VD Vleuten - Inkloksysteem' --exclude-dir=venv --include=*.py --include=*.md --include=*.txt)",
+      "Bash(xargs grep:*)",
+      "Bash(find 'G:/Mijn Drive/.Zelfstandige onderneming/VD Vleuten - Inkloksysteem' -maxdepth 2 -type f \\\\\\(-name *wsgi* -o -name Procfile -o -name *.sh -o -name *.cfg -o -name *.ini -o -name *.yml -o -name *.yaml \\\\\\))",
+      "Bash(mv templates/icon-192.svg static/icon-192.svg)",
+      "Bash(rm templates/VDV_Tijdregistratie_voorbeeld.xlsx)",
+      "Bash(xxd requirements.txt)"
+    ]
+  }
+}
