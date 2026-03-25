@@ -19,12 +19,11 @@
     <a href="/backup/db"    class="nav-link"><span class="nav-icon">⬇</span> DB Backup</a>
     <a href="/audit-log"    class="nav-link {% if request.path == '/audit-log'    %}active{% endif %}"><span class="nav-icon">⊡</span> Audit log</a>
   </div>
-  <div class="sidebar-footer">
+  <div class="sidebar-footer" style="position:relative;overflow:hidden;">
+    <a href="https://weppas.nl" target="_blank" rel="noopener" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);opacity:0.08;">
+      <img src="https://weppas.nl/assets/logo.png" alt="weppas" width="60" height="60" style="display:block;">
+    </a>
     <span style="color:rgba(255,255,255,0.5);font-size:11px;">{{ session.get('admin_display', 'Admin') }}</span><br>
     <a href="/">← Kiosk</a> &nbsp;·&nbsp; <a href="/admin/logout">Uitloggen</a>
-    <a href="https://weppas.nl" target="_blank" rel="noopener" style="display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:#9ca3af;text-decoration:none;margin-top:14px;border-top:1px solid rgba(255,255,255,0.1);padding-top:12px;">
-      <img src="https://weppas.nl/assets/logo.png" alt="weppas" width="16" height="16" style="display:block;">
-      weppas.nl
-    </a>
   </div>
 </nav>
