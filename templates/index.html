@@ -566,6 +566,7 @@
     ).join('');
     document.getElementById('trakteer-overlay').classList.add('show');
     launchConfetti();
+    setTimeout(closeTrakteer, 5000);
   }
   function closeTrakteer() {
     document.getElementById('trakteer-overlay').classList.remove('show');
