@@ -196,6 +196,7 @@
         <polyline points="20 6 9 17 4 12"></polyline>
       </svg>
     </div>
+    <div id="confirm-greeting" style="font-size:15px;color:var(--muted);margin-bottom:6px;"></div>
     <div class="confirm-name" id="confirm-name"></div>
     <div class="confirm-action" id="confirm-action"></div>
     <div class="confirm-time" id="confirm-time"></div>
@@ -393,15 +394,27 @@
 
   // ── Bevestigingsscherm ─────────────────────────────────────────────────────
   const i18nLabels = {
-    nl: {in:'Ingeklokt', uit:'Uitgeklokt', pauze_in:'Pauze gestart', pauze_uit:'Pauze beëindigd', late:'Te laat'},
-    en: {in:'Clocked in', uit:'Clocked out', pauze_in:'Break started', pauze_uit:'Break ended', late:'Late'},
-    de: {in:'Eingestempelt', uit:'Ausgestempelt', pauze_in:'Pause gestartet', pauze_uit:'Pause beendet', late:'Zu spät'},
-    pl: {in:'Zarejestrowano', uit:'Wyrejestrowano', pauze_in:'Przerwa rozpoczęta', pauze_uit:'Przerwa zakończona', late:'Spóźnienie'},
+    nl: {in:'Ingeklokt', uit:'Uitgeklokt', pauze_in:'Pauze gestart', pauze_uit:'Pauze beëindigd', late:'Te laat',
+         greet_in:'Welkom {name}, werk ze vandaag!', greet_uit:'Fijne dag {name}, dank voor je inzet!'},
+    en: {in:'Clocked in', uit:'Clocked out', pauze_in:'Break started', pauze_uit:'Break ended', late:'Late',
+         greet_in:'Welcome {name}, have a great day!', greet_uit:'Have a nice day {name}, thanks for your effort!'},
+    de: {in:'Eingestempelt', uit:'Ausgestempelt', pauze_in:'Pause gestartet', pauze_uit:'Pause beendet', late:'Zu spät',
+         greet_in:'Willkommen {name}, guten Arbeitstag!', greet_uit:'Schönen Tag {name}, danke für deinen Einsatz!'},
+    pl: {in:'Zarejestrowano', uit:'Wyrejestrowano', pauze_in:'Przerwa rozpoczęta', pauze_uit:'Przerwa zakończona', late:'Spóźnienie',
+         greet_in:'Witaj {name}, powodzenia w pracy!', greet_uit:'Miłego dnia {name}, dziękujemy za pracę!'},
   };
   function showConfirmation(data) {
     const lang = data.lang || 'nl';
     const labels = i18nLabels[lang] || i18nLabels.nl;
     const overlay = document.getElementById('confirm-overlay');
+    const greetEl = document.getElementById('confirm-greeting');
+    const greetKey = data.action === 'in' ? 'greet_in' : data.action === 'uit' ? 'greet_uit' : null;
+    if (greetKey && labels[greetKey]) {
+      greetEl.style.display = 'block';
+      greetEl.textContent = labels[greetKey].replace('{name}', data.name.split(' ')[0]);
+    } else {
+      greetEl.style.display = 'none';
+    }
     document.getElementById('confirm-name').textContent = data.name;
     document.getElementById('confirm-action').textContent = labels[data.action] || data.action;
     document.getElementById('confirm-time').textContent = data.time;
