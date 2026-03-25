@@ -182,7 +182,7 @@ def audit_log(action, target_type=None, target_id=None, old_value=None, new_valu
 def get_employee_by_code(code):
     conn = get_db_connection()
     row = conn.execute(
-        "SELECT id, code, name, active, pin FROM employees WHERE code = ? AND active = 1", (code,)
+        "SELECT id, code, name, active, pin, language, birthdate FROM employees WHERE code = ? AND active = 1", (code,)
     ).fetchone()
     conn.close()
     return row
@@ -554,6 +554,56 @@ def admin_users():
     return render_template("admin_users.html", users=users, error=error, success=success)
 
 
+# ── Vertalingen ──────────────────────────────────────────────────────────────
+
+TRANSLATIONS = {
+    "nl": {
+        "ingeklokt": "ingeklokt", "uitgeklokt": "uitgeklokt",
+        "pauze gestart": "pauze gestart", "pauze beëindigd": "pauze beëindigd",
+        "Ingeklokt": "Ingeklokt", "Uitgeklokt": "Uitgeklokt",
+        "Pauze gestart": "Pauze gestart", "Pauze beëindigd": "Pauze beëindigd",
+        "min te laat": "min te laat",
+        "birthday": "Gefeliciteerd met je verjaardag! 🎂",
+    },
+    "en": {
+        "ingeklokt": "clocked in", "uitgeklokt": "clocked out",
+        "pauze gestart": "break started", "pauze beëindigd": "break ended",
+        "Ingeklokt": "Clocked in", "Uitgeklokt": "Clocked out",
+        "Pauze gestart": "Break started", "Pauze beëindigd": "Break ended",
+        "min te laat": "min late",
+        "birthday": "Happy birthday! 🎂",
+    },
+    "de": {
+        "ingeklokt": "eingestempelt", "uitgeklokt": "ausgestempelt",
+        "pauze gestart": "Pause gestartet", "pauze beëindigd": "Pause beendet",
+        "Ingeklokt": "Eingestempelt", "Uitgeklokt": "Ausgestempelt",
+        "Pauze gestart": "Pause gestartet", "Pauze beëindigd": "Pause beendet",
+        "min te laat": "Min. zu spät",
+        "birthday": "Herzlichen Glückwunsch zum Geburtstag! 🎂",
+    },
+    "pl": {
+        "ingeklokt": "zarejestrowano", "uitgeklokt": "wyrejestrowano",
+        "pauze gestart": "przerwa rozpoczęta", "pauze beëindigd": "przerwa zakończona",
+        "Ingeklokt": "Zarejestrowano", "Uitgeklokt": "Wyrejestrowano",
+        "Pauze gestart": "Przerwa rozpoczęta", "Pauze beëindigd": "Przerwa zakończona",
+        "min te laat": "min spóźnienia",
+        "birthday": "Wszystkiego najlepszego z okazji urodzin! 🎂",
+    },
+}
+
+def t(lang, key):
+    return TRANSLATIONS.get(lang, TRANSLATIONS["nl"]).get(key, TRANSLATIONS["nl"].get(key, key))
+
+def is_birthday(birthdate_str):
+    if not birthdate_str:
+        return False
+    try:
+        bd = datetime.strptime(birthdate_str, "%Y-%m-%d")
+        today = nl_now()
+        return bd.month == today.month and bd.day == today.day
+    except ValueError:
+        return False
+
 # ── Kiosk ────────────────────────────────────────────────────────────────────
 
 @app.route("/")
@@ -660,12 +710,15 @@ def clock():
         }), 200
 
     timestamp = save_entry(code, action, reason)
-    action_labels = {"in": "ingeklokt", "uit": "uitgeklokt", "pauze_in": "pauze gestart", "pauze_uit": "pauze beëindigd"}
-    label = action_labels.get(action, action)
+    lang = employee["language"] if "language" in employee.keys() else "nl"
+    action_labels_key = {"in": "ingeklokt", "uit": "uitgeklokt", "pauze_in": "pauze gestart", "pauze_uit": "pauze beëindigd"}
+    label = t(lang, action_labels_key.get(action, action))
 
     msg = f"{employee['name']} {label} om {timestamp[-8:]}"
     if late_info:
-        msg += f" ({late_info['minutes']} min te laat)"
+        msg += f" ({late_info['minutes']} {t(lang, 'min te laat')})"
+
+    birthday = is_birthday(employee["birthdate"] if "birthdate" in employee.keys() else None)
 
     app.logger.info(f"Clock: {code} {action} at {timestamp}")
 
@@ -676,7 +729,9 @@ def clock():
         "action": action,
         "time": timestamp[-8:],
         "late": late_info is not None,
-        "reason": reason
+        "reason": reason,
+        "lang": lang,
+        "birthday": t(lang, "birthday") if birthday else None
     })
 
 @app.route("/status/<code>")
@@ -857,15 +912,29 @@ def employees():
             elif not re.match(r"^[a-zA-Z0-9]{1,20}$", code):
                 error_message = "Code mag alleen letters en cijfers bevatten (max 20)."
             else:
+                language = request.form.get("language", "nl").strip()
+                birthdate = request.form.get("birthdate", "").strip() or None
                 try:
                     conn = get_db_connection()
-                    conn.execute("INSERT INTO employees (code, name, active) VALUES (?, ?, 1)", (code, name))
+                    conn.execute("INSERT INTO employees (code, name, active, language, birthdate) VALUES (?, ?, 1, ?, ?)", (code, name, language, birthdate))
                     conn.commit()
                     conn.close()
                     audit_log("add_employee", "employee", code, None, name)
                     success_message = f"Medewerker '{name}' toegevoegd."
                 except sqlite3.IntegrityError:
                     error_message = "Deze medewerkerscode bestaat al."
+
+        elif act == "update_details":
+            emp_id = request.form.get("id")
+            language = request.form.get("language", "nl").strip()
+            birthdate = request.form.get("birthdate", "").strip() or None
+            conn = get_db_connection()
+            conn.execute("UPDATE employees SET language=?, birthdate=? WHERE id=?", (language, birthdate, emp_id))
+            conn.commit()
+            conn.close()
+            audit_log("update_employee_details", "employee", emp_id)
+            success_message = "Medewerker bijgewerkt."
+
         elif act in ("deactivate", "activate"):
             emp_id = request.form.get("id")
             val = 0 if act == "deactivate" else 1

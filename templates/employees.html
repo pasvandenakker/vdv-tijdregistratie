@@ -35,6 +35,21 @@
                     <input type="text" id="name" name="name" class="form-input" placeholder="Voor- en achternaam" required>
                   </div>
                 </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="language">Taal kiosk</label>
+                    <select id="language" name="language" class="form-input">
+                      <option value="nl">Nederlands</option>
+                      <option value="en">English</option>
+                      <option value="de">Deutsch</option>
+                      <option value="pl">Polski</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="birthdate">Geboortedatum</label>
+                    <input type="date" id="birthdate" name="birthdate" class="form-input">
+                  </div>
+                </div>
                 <button type="submit" class="btn btn-primary">Toevoegen</button>
               </form>
             </div>
@@ -49,15 +64,20 @@
                 <tr>
                   <th>Code</th>
                   <th>Naam</th>
+                  <th>Taal</th>
+                  <th>Geboortedatum</th>
                   <th>Status</th>
                   <th></th>
                 </tr>
               </thead>
               <tbody>
+                {% set lang_labels = {'nl':'NL','en':'EN','de':'DE','pl':'PL'} %}
                 {% for row in rows %}
                 <tr>
                   <td class="text-mono">{{ row['code'] }}</td>
                   <td>{{ row['name'] }}</td>
+                  <td>{{ lang_labels.get(row['language'] or 'nl', 'NL') }}</td>
+                  <td>{{ row['birthdate'][:10] if row['birthdate'] else '—' }}</td>
                   <td>
                     <span class="badge {% if row['active'] %}badge-active{% else %}badge-inactive{% endif %}">
                       {% if row['active'] %}Actief{% else %}Inactief{% endif %}
@@ -65,6 +85,7 @@
                   </td>
                   <td>
                     <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                      <button class="btn btn-sm" onclick="openEdit({{ row['id'] }},'{{ row['language'] or 'nl' }}','{{ row['birthdate'] or '' }}')">Bewerk</button>
                       <form method="POST" style="display:inline;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                         <input type="hidden" name="id" value="{{ row['id'] }}">
@@ -87,7 +108,7 @@
                   </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="4" style="text-align:center; padding:24px; color:var(--hint);">Geen medewerkers.</td></tr>
+                <tr><td colspan="6" style="text-align:center; padding:24px; color:var(--hint);">Geen medewerkers.</td></tr>
                 {% endfor %}
               </tbody>
             </table>
@@ -98,5 +119,47 @@
     </div>
   </div>
 </div>
+
+<!-- Bewerk dialog -->
+<div id="edit-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:100;display:none;align-items:center;justify-content:center;">
+  <div class="card" style="width:360px;margin:auto;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);">
+    <div class="card-header"><h2>Medewerker bewerken</h2></div>
+    <div class="card-body">
+      <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="_action" value="update_details">
+        <input type="hidden" name="id" id="edit-id">
+        <div class="form-group">
+          <label class="form-label">Taal kiosk</label>
+          <select name="language" id="edit-language" class="form-input">
+            <option value="nl">Nederlands</option>
+            <option value="en">English</option>
+            <option value="de">Deutsch</option>
+            <option value="pl">Polski</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Geboortedatum</label>
+          <input type="date" name="birthdate" id="edit-birthdate" class="form-input">
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <button type="submit" class="btn btn-primary">Opslaan</button>
+          <button type="button" class="btn" onclick="closeEdit()">Annuleren</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+function openEdit(id, lang, bd) {
+  document.getElementById('edit-id').value = id;
+  document.getElementById('edit-language').value = lang;
+  document.getElementById('edit-birthdate').value = bd;
+  document.getElementById('edit-overlay').style.display = 'block';
+}
+function closeEdit() {
+  document.getElementById('edit-overlay').style.display = 'none';
+}
+</script>
 </body>
 </html>

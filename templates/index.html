@@ -169,6 +169,7 @@
     <div class="confirm-action" id="confirm-action"></div>
     <div class="confirm-time" id="confirm-time"></div>
     <div class="confirm-late" id="confirm-late" style="display:none;"></div>
+    <div id="confirm-birthday" style="display:none;margin-top:12px;font-size:18px;"></div>
   </div>
 </div>
 
@@ -360,20 +361,34 @@
   let pinDigits=[], selectedReason=null;
 
   // ── Bevestigingsscherm ─────────────────────────────────────────────────────
+  const i18nLabels = {
+    nl: {in:'Ingeklokt', uit:'Uitgeklokt', pauze_in:'Pauze gestart', pauze_uit:'Pauze beëindigd', late:'Te laat'},
+    en: {in:'Clocked in', uit:'Clocked out', pauze_in:'Break started', pauze_uit:'Break ended', late:'Late'},
+    de: {in:'Eingestempelt', uit:'Ausgestempelt', pauze_in:'Pause gestartet', pauze_uit:'Pause beendet', late:'Zu spät'},
+    pl: {in:'Zarejestrowano', uit:'Wyrejestrowano', pauze_in:'Przerwa rozpoczęta', pauze_uit:'Przerwa zakończona', late:'Spóźnienie'},
+  };
   function showConfirmation(data) {
-    const actionLabels = {in:'Ingeklokt', uit:'Uitgeklokt', pauze_in:'Pauze gestart', pauze_uit:'Pauze beëindigd'};
+    const lang = data.lang || 'nl';
+    const labels = i18nLabels[lang] || i18nLabels.nl;
     document.getElementById('confirm-name').textContent = data.name;
-    document.getElementById('confirm-action').textContent = actionLabels[data.action] || data.action;
+    document.getElementById('confirm-action').textContent = labels[data.action] || data.action;
     document.getElementById('confirm-time').textContent = data.time;
     const lateEl = document.getElementById('confirm-late');
     if (data.late) {
       lateEl.style.display = 'inline-block';
-      lateEl.textContent = 'Te laat' + (data.reason ? ': ' + data.reason : '');
+      lateEl.textContent = labels.late + (data.reason ? ': ' + data.reason : '');
     } else {
       lateEl.style.display = 'none';
     }
+    const bdEl = document.getElementById('confirm-birthday');
+    if (data.birthday) {
+      bdEl.style.display = 'block';
+      bdEl.textContent = data.birthday;
+    } else {
+      bdEl.style.display = 'none';
+    }
     document.getElementById('confirm-overlay').classList.add('show');
-    setTimeout(() => document.getElementById('confirm-overlay').classList.remove('show'), 3000);
+    setTimeout(() => document.getElementById('confirm-overlay').classList.remove('show'), data.birthday ? 6000 : 3000);
   }
 
   // ── Hoofdfunctie: inklokken ────────────────────────────────────────────────

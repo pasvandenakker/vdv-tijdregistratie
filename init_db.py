@@ -48,7 +48,7 @@ c.execute("""CREATE TABLE IF NOT EXISTS audit_log (
 )""")
 
 # Safe migrations
-for col, defn in [("active","INTEGER NOT NULL DEFAULT 1"),("pin","TEXT")]:
+for col, defn in [("active","INTEGER NOT NULL DEFAULT 1"),("pin","TEXT"),("language","TEXT NOT NULL DEFAULT 'nl'"),("birthdate","TEXT")]:
     try: c.execute(f"ALTER TABLE employees ADD COLUMN {col} {defn}")
     except: pass
 
