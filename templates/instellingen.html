@@ -66,6 +66,28 @@
           </div>
         </div>
 
+        <!-- Pauze-registratie -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Pauze-registratie</h2>
+            <span class="badge {% if pauze_enabled %}badge-in{% else %}badge-out{% endif %}">
+              {% if pauze_enabled %}Aan{% else %}Uit{% endif %}
+            </span>
+          </div>
+          <div class="card-body">
+            <p style="font-size:14px;color:var(--muted);margin-bottom:16px;">
+              Als pauze-registratie is uitgeschakeld wordt de pauzeknop niet getoond op het inklokscherm.
+            </p>
+            <form method="POST">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <input type="hidden" name="_action" value="toggle_pauze">
+              <button type="submit" class="btn {% if pauze_enabled %}btn-danger{% else %}btn-primary{% endif %}">
+                Pauze {% if pauze_enabled %}uitschakelen{% else %}inschakelen{% endif %}
+              </button>
+            </form>
+          </div>
+        </div>
+
         <!-- Alert drempel -->
         <div class="card">
           <div class="card-header"><h2>Notificatie-drempel</h2></div>

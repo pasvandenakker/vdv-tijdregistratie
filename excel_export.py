@@ -13,6 +13,9 @@ from openpyxl.utils import get_column_letter
 from openpyxl.drawing.image import Image as XLImage
 from openpyxl.styles.numbers import FORMAT_NUMBER_00
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+
+NL_TZ = ZoneInfo("Europe/Amsterdam")
 from collections import defaultdict
 from io import BytesIO
 import os
@@ -226,7 +229,7 @@ def generate_excel(db_rows, employees_meta, date_from, date_to, logo_path=None):
     c.alignment = align('left', 'center')
 
     ws.merge_cells("F7:J7")
-    c = ws.cell(7, 6, f"Gegenereerd op: {datetime.now().strftime('%d-%m-%Y %H:%M')}")
+    c = ws.cell(7, 6, f"Gegenereerd op: {datetime.now(NL_TZ).strftime('%d-%m-%Y %H:%M')}")
     c.font = fnt(size=9, color=TEXT_MUTED, italic=True)
     c.alignment = align('right', 'center')
 
@@ -361,7 +364,7 @@ def generate_excel(db_rows, employees_meta, date_from, date_to, logo_path=None):
         c.alignment = align('left', 'center')
 
         ws2.merge_cells("E7:H7")
-        c = ws2.cell(7, 5, f"Periode: {date_from} t/m {date_to}   ·   {datetime.now().strftime('%d-%m-%Y %H:%M')}")
+        c = ws2.cell(7, 5, f"Periode: {date_from} t/m {date_to}   ·   {datetime.now(NL_TZ).strftime('%d-%m-%Y %H:%M')}")
         c.font = fnt(size=9, color=TEXT_MUTED, italic=True)
         c.alignment = align('right', 'center')
 
@@ -407,9 +410,9 @@ def generate_excel(db_rows, employees_meta, date_from, date_to, logo_path=None):
                 # Te laat detectie — reden aanwezig = te laat geweest
                 is_late = bool(first_reason)
 
-                # Kleur: te laat = licht oranje, weekend = pale oranje, werkdag alternerend
+                # Kleur: te laat = licht rood, weekend = pale oranje, werkdag alternerend
                 if is_late and not is_weekend:
-                    row_fill = fill(LATE_ORG_BG)
+                    row_fill = fill(LATE_RED_BG)
                 elif is_weekend:
                     row_fill = fill(ORANGE_PALE)
                 elif di % 2 == 0:
@@ -425,20 +428,22 @@ def generate_excel(db_rows, employees_meta, date_from, date_to, logo_path=None):
                     fmt_dur(day["worked_sec"]),
                     fmt_dur(day["break_sec"]),
                     fmt_dec(day["worked_sec"]),
-                    ""  # notitie kolom
+                    first_reason or ""
                 ]
 
                 for ci, val in enumerate(row_values, 1):
                     c = ws2.cell(row_num, ci, val)
                     c.fill = row_fill
                     c.border = thin(GRAY_BORDER)
-                    c.alignment = align('center', 'center')
-                    c.font = fnt(size=10, color=TEXT_DARK)
-                    if ci == 1:
-                        date_color = LATE_RED if is_late else (ORANGE if is_weekend else TEXT_DARK)
-                        c.font = fnt(size=10, bold=True, color=date_color)
-                    if ci == 2 and is_weekend:
+                    c.alignment = align('center' if ci != 8 else 'left', 'center')
+                    if is_late and not is_weekend:
+                        c.font = fnt(size=10, color=LATE_RED, bold=(ci in (1, 8)))
+                    elif ci == 1:
+                        c.font = fnt(size=10, bold=True, color=ORANGE if is_weekend else TEXT_DARK)
+                    elif ci == 2 and is_weekend:
                         c.font = fnt(size=10, color=ORANGE, bold=True)
+                    else:
+                        c.font = fnt(size=10, color=TEXT_DARK)
                     if ci == 7:
                         c.number_format = '0.00'
 

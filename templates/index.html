@@ -260,7 +260,7 @@
         <button class="btn-kiosk btn-in"  onclick="sendClock('in')">Inklokken</button>
         <button class="btn-kiosk btn-out" onclick="sendClock('uit')">Uitklokken</button>
       </div>
-      <button class="break-btn" id="break-btn" onclick="handleBreak()">⏸ Pauze</button>
+      {% if pauze_enabled %}<button class="break-btn" id="break-btn" onclick="handleBreak()">⏸ Pauze</button>{% endif %}
       <div class="kiosk-status" id="status-wrap"><span id="status"></span></div>
       <div style="display:flex; justify-content:space-between; align-items:center; margin-top:18px;">
         <a href="/admin/login" class="kiosk-admin-link" style="margin:0;">Beheer →</a>
@@ -306,7 +306,7 @@
     const hint = document.getElementById('schedule-hint');
     const breakBtn = document.getElementById('break-btn');
     const hoursBtn = document.getElementById('hours-btn');
-    hint.style.display='none'; breakBtn.style.display='none'; hoursBtn.style.display='none';
+    hint.style.display='none'; if(breakBtn) breakBtn.style.display='none'; hoursBtn.style.display='none';
     if (code.length < 2) return;
     clearTimeout(scheduleTimer);
     scheduleTimer = setTimeout(async () => {
@@ -318,8 +318,8 @@
         if (sr.ok) {
           const d = await sr.json();
           hoursBtn.style.display = 'block';
-          if (d.status==='in') { breakBtn.style.display='block'; breakBtn.textContent='⏸ Pauze starten'; }
-          else if (d.status==='pauze_in') { breakBtn.style.display='block'; breakBtn.textContent='▶ Pauze beëindigen'; }
+          if (breakBtn && d.status==='in') { breakBtn.style.display='block'; breakBtn.textContent='⏸ Pauze starten'; }
+          else if (breakBtn && d.status==='pauze_in') { breakBtn.style.display='block'; breakBtn.textContent='▶ Pauze beëindigen'; }
         }
         if (scr.ok) {
           const s = await scr.json();

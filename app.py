@@ -1,6 +1,12 @@
 from flask import Flask, render_template, request, jsonify, Response, redirect, url_for, session, send_file
 import sqlite3
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+
+NL_TZ = ZoneInfo("Europe/Amsterdam")
+
+def nl_now():
+    return datetime.now(NL_TZ)
 import csv
 from io import StringIO, BytesIO
 import secrets
@@ -140,6 +146,9 @@ def get_alert_threshold_minutes():
     val = get_setting("alert_threshold_minutes", "600")
     return int(val)
 
+def get_pauze_enabled():
+    return get_setting("pauze_enabled", "1") == "1"
+
 
 # ── Auth ─────────────────────────────────────────────────────────────────────
 
@@ -188,7 +197,7 @@ def get_last_action(code):
     return row
 
 def save_entry(code, action, reason=None):
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    timestamp = nl_now().strftime("%Y-%m-%d %H:%M:%S")
     conn = get_db_connection()
     conn.execute(
         "INSERT INTO time_entries (code, action, timestamp, reason) VALUES (?, ?, ?, ?)",
@@ -296,8 +305,8 @@ def format_duration(seconds):
 @app.route("/rapport")
 @admin_required
 def rapport():
-    date_from = request.args.get("from", (datetime.now() - timedelta(days=6)).strftime("%Y-%m-%d"))
-    date_to = request.args.get("to", datetime.now().strftime("%Y-%m-%d"))
+    date_from = request.args.get("from", (nl_now() - timedelta(days=6)).strftime("%Y-%m-%d"))
+    date_to = request.args.get("to", nl_now().strftime("%Y-%m-%d"))
     emp_filter = request.args.get("employee", "")
 
     query = """SELECT t.code, e.name, t.action, t.timestamp
@@ -395,6 +404,13 @@ def instellingen():
             audit_log("toggle_pin", "settings", "pin_mode", str(int(current_mode)), new_val)
             success = f"PIN-modus {'ingeschakeld' if new_val == '1' else 'uitgeschakeld'}."
 
+        elif act == "toggle_pauze":
+            current_mode = get_pauze_enabled()
+            new_val = "0" if current_mode else "1"
+            set_setting("pauze_enabled", new_val)
+            audit_log("toggle_pauze", "settings", "pauze_enabled", str(int(current_mode)), new_val)
+            success = f"Pauze-registratie {'ingeschakeld' if new_val == '1' else 'uitgeschakeld'}."
+
         elif act == "set_pin":
             emp_id = request.form.get("emp_id", "")
             pin_val = request.form.get("pin_value", "").strip()
@@ -419,8 +435,9 @@ def instellingen():
     conn.close()
 
     alert_threshold = get_alert_threshold_minutes()
+    pauze_enabled = get_pauze_enabled()
     return render_template("instellingen.html",
-        pin_mode=pin_mode, employees_list=employees_list,
+        pin_mode=pin_mode, pauze_enabled=pauze_enabled, employees_list=employees_list,
         alert_threshold=alert_threshold,
         error=error, success=success)
 
@@ -541,7 +558,7 @@ def admin_users():
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("index.html", pauze_enabled=get_pauze_enabled())
 
 @app.route("/clock", methods=["POST"])
 def clock():
@@ -564,6 +581,8 @@ def clock():
         return jsonify({"status": "error", "message": "Ongeldige code formaat."}), 400
     if action not in ["in", "uit", "pauze_in", "pauze_uit"]:
         return jsonify({"status": "error", "message": "Ongeldige actie."}), 400
+    if action in ["pauze_in", "pauze_uit"] and not get_pauze_enabled():
+        return jsonify({"status": "error", "message": "Pauze-registratie is uitgeschakeld."}), 400
 
     employee = get_employee_by_code(code)
     if not employee:
@@ -606,7 +625,7 @@ def clock():
     # ── Te laat detectie ─────────────────────────────────────────────────────
     late_info = None
     if action == "in":
-        now = datetime.now()
+        now = nl_now()
         day_idx = now.weekday()
         conn = get_db_connection()
         schedule = conn.execute(
@@ -685,7 +704,7 @@ def api_my_hours(code):
     if not employee:
         return jsonify({"error": "Onbekend"}), 404
 
-    today = datetime.now()
+    today = nl_now()
     week_start = (today - timedelta(days=today.weekday())).strftime("%Y-%m-%d")
     week_end = today.strftime("%Y-%m-%d")
 
@@ -730,8 +749,8 @@ def api_my_hours(code):
 @app.route("/dashboard")
 @admin_required
 def dashboard():
-    today = datetime.now().strftime("%Y-%m-%d")
-    week_start = (datetime.now() - timedelta(days=datetime.now().weekday())).strftime("%Y-%m-%d")
+    today = nl_now().strftime("%Y-%m-%d")
+    week_start = (nl_now() - timedelta(days=nl_now().weekday())).strftime("%Y-%m-%d")
     conn = get_db_connection()
 
     total_employees = conn.execute("SELECT COUNT(*) FROM employees WHERE active=1").fetchone()[0]
@@ -773,7 +792,7 @@ def dashboard():
     return render_template("dashboard.html",
         total_employees=total_employees, clocked_in=clocked_in, on_break=on_break,
         today_count=today_count, weekly_hours=weekly_hours,
-        now=datetime.now().strftime("%H:%M"), today=today)
+        now=nl_now().strftime("%H:%M"), today=today)
 
 
 # ── Admin: Logs (met paginering) ─────────────────────────────────────────────
@@ -1009,8 +1028,8 @@ pip install openpyxl Pillow</pre>
     except Exception as e:
         return f"<h2>Fout bij laden excel_export.py</h2><pre>{e}</pre><p>Controleer of excel_export.py naast app.py staat.</p>", 500
 
-    date_from = request.args.get("from", (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d"))
-    date_to   = request.args.get("to",   datetime.now().strftime("%Y-%m-%d"))
+    date_from = request.args.get("from", (nl_now() - timedelta(days=30)).strftime("%Y-%m-%d"))
+    date_to   = request.args.get("to",   nl_now().strftime("%Y-%m-%d"))
 
     conn = get_db_connection()
     rows = conn.execute(
@@ -1187,7 +1206,7 @@ def roosters():
 @app.route("/api/alerts")
 @admin_required
 def api_alerts():
-    now = datetime.now()
+    now = nl_now()
     today = now.strftime("%Y-%m-%d")
     threshold_minutes = get_alert_threshold_minutes()
     conn = get_db_connection()
@@ -1271,7 +1290,7 @@ def api_alerts():
 def api_schedule_today(code):
     if not re.match(r"^[a-zA-Z0-9]{1,20}$", code):
         return jsonify({}), 400
-    day_idx = datetime.now().weekday()
+    day_idx = nl_now().weekday()
     conn = get_db_connection()
     row = conn.execute(
         "SELECT start_time, end_time FROM schedules WHERE employee_code=? AND day_of_week=?",
@@ -1316,7 +1335,7 @@ def backup_db():
     backup_buf.seek(0)
 
     # Actually just send the file directly
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = nl_now().strftime("%Y%m%d_%H%M%S")
     audit_log("backup_database", "system", "timeclock.db")
     return send_file(
         DB_NAME,
@@ -1357,7 +1376,7 @@ def health():
             "status": "ok",
             "database": "connected",
             "active_employees": emp_count,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": nl_now().isoformat()
         })
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
