@@ -987,20 +987,17 @@ def employees():
 def delete_entry(entry_id):
     entry = get_entry_by_id(entry_id)
     if not entry:
-        return jsonify({"status": "error", "message": "Niet gevonden."}), 404
+        return redirect(url_for("logs"))
     old_val = f"{entry['code']} {entry['action']} {entry['timestamp']}"
-    try:
-        conn = get_db_connection()
-        conn.execute("DELETE FROM time_entries WHERE id=?", (entry_id,))
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        return jsonify({"status": "error", "message": f"Fout bij verwijderen: {e}"}), 500
+    conn = get_db_connection()
+    conn.execute("DELETE FROM time_entries WHERE id=?", (entry_id,))
+    conn.commit()
+    conn.close()
     try:
         audit_log("delete_entry", "time_entry", entry_id, old_val)
     except Exception:
         pass
-    return jsonify({"status": "success"})
+    return redirect(url_for("logs"))
 
 @app.route("/edit-entry/<int:entry_id>", methods=["GET", "POST"])
 @admin_required

@@ -75,7 +75,10 @@
                 <td class="text-muted" style="font-size:12px; max-width:120px; overflow:hidden; text-overflow:ellipsis;">{{ row['reason'] or '' }}</td>
                 <td class="text-right" style="white-space:nowrap;">
                   <a href="/edit-entry/{{ row['id'] }}" class="btn btn-sm">Bewerken</a>
-                  <button class="btn btn-sm btn-danger" onclick="deleteEntry({{ row['id'] }})">Verwijderen</button>
+                  <form method="POST" action="/delete-entry/{{ row['id'] }}" style="display:inline;" onsubmit="return confirm('Weet je zeker dat je deze registratie wilt verwijderen?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button type="submit" class="btn btn-sm btn-danger">Verwijderen</button>
+                  </form>
                 </td>
               </tr>
               {% else %}
@@ -102,34 +105,5 @@
     </div>
   </div>
 </div>
-<script>
-  async function deleteEntry(id) {
-    if (!confirm('Weet je zeker dat je deze registratie wilt verwijderen?')) return;
-    try {
-      const body = new FormData();
-      body.append('csrf_token', '{{ csrf_token }}');
-      const res = await fetch('/delete-entry/' + id, { method: 'POST', body: body });
-      if (res.redirected) {
-        alert('Sessie verlopen. Log opnieuw in.');
-        window.location.href = '/admin';
-        return;
-      }
-      let data;
-      try {
-        data = await res.json();
-      } catch (e) {
-        alert('Serverfout bij verwijderen. Herlaad de pagina en probeer opnieuw.');
-        return;
-      }
-      if (res.ok) {
-        window.location.reload();
-      } else {
-        alert(data.message || 'Verwijderen mislukt.');
-      }
-    } catch (e) {
-      alert('Netwerkfout bij verwijderen: ' + e.message);
-    }
-  }
-</script>
 </body>
 </html>
