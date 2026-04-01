@@ -105,13 +105,29 @@
 <script>
   async function deleteEntry(id) {
     if (!confirm('Weet je zeker dat je deze registratie wilt verwijderen?')) return;
-    const res = await fetch('/delete-entry/' + id, { method: 'POST' });
-    const data = await res.json();
-    if (res.ok) {
-      const row = document.getElementById('row-' + id);
-      if (row) row.remove();
-    } else {
-      alert(data.message || 'Verwijderen mislukt.');
+    try {
+      const body = new FormData();
+      body.append('csrf_token', '{{ csrf_token }}');
+      const res = await fetch('/delete-entry/' + id, { method: 'POST', body: body });
+      if (res.redirected) {
+        alert('Sessie verlopen. Log opnieuw in.');
+        window.location.href = '/admin';
+        return;
+      }
+      let data;
+      try {
+        data = await res.json();
+      } catch (e) {
+        alert('Serverfout bij verwijderen. Herlaad de pagina en probeer opnieuw.');
+        return;
+      }
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        alert(data.message || 'Verwijderen mislukt.');
+      }
+    } catch (e) {
+      alert('Netwerkfout bij verwijderen: ' + e.message);
     }
   }
 </script>

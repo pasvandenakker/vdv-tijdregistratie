@@ -989,11 +989,17 @@ def delete_entry(entry_id):
     if not entry:
         return jsonify({"status": "error", "message": "Niet gevonden."}), 404
     old_val = f"{entry['code']} {entry['action']} {entry['timestamp']}"
-    conn = get_db_connection()
-    conn.execute("DELETE FROM time_entries WHERE id=?", (entry_id,))
-    conn.commit()
-    conn.close()
-    audit_log("delete_entry", "time_entry", entry_id, old_val)
+    try:
+        conn = get_db_connection()
+        conn.execute("DELETE FROM time_entries WHERE id=?", (entry_id,))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"Fout bij verwijderen: {e}"}), 500
+    try:
+        audit_log("delete_entry", "time_entry", entry_id, old_val)
+    except Exception:
+        pass
     return jsonify({"status": "success"})
 
 @app.route("/edit-entry/<int:entry_id>", methods=["GET", "POST"])
