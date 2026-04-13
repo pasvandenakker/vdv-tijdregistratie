@@ -371,7 +371,7 @@ def generate_excel(db_rows, employees_meta, date_from, date_to, logo_path=None):
         ws2.row_dimensions[8].height = 8
 
         # ── Dagoverzicht header ────────────────────────────────────────────────
-        DAY_HEADERS = ["Datum", "Dag", "Inklok", "Uitklok", "Gewerkt", "Pauze", "Netto (dec)", "Reden / Notitie"]
+        DAY_HEADERS = ["Datum", "Dag", "Inklok", "Uitklok", "Gewerkt", "Pauze", "Netto (dec)", "Reden", "Notitie"]
         ws2.row_dimensions[9].height = 22
         for ci, h in enumerate(DAY_HEADERS, 1):
             c = ws2.cell(9, ci, h)
@@ -386,7 +386,7 @@ def generate_excel(db_rows, employees_meta, date_from, date_to, logo_path=None):
 
         if not emp["days"]:
             ws2.row_dimensions[detail_start].height = 20
-            ws2.merge_cells(f"A{detail_start}:H{detail_start}")
+            ws2.merge_cells(f"A{detail_start}:I{detail_start}")
             c = ws2.cell(detail_start, 1, "Geen registraties in deze periode.")
             c.font = fnt(size=10, color=TEXT_MUTED, italic=True)
             c.alignment = align('center', 'center')
@@ -405,6 +405,8 @@ def generate_excel(db_rows, employees_meta, date_from, date_to, logo_path=None):
                 first_in  = next((e["timestamp"][11:16] for e in entries_sorted if e["action"] == "in"),  "—")
                 first_in_row = next((e for e in entries_sorted if e["action"] == "in"), None)
                 first_reason = first_in_row["reason"] if first_in_row and "reason" in first_in_row.keys() and first_in_row["reason"] else None
+                # Notitie: neem eerste niet-lege notitie van de dag (ongeacht actie)
+                first_note = next((e["note"] for e in entries_sorted if "note" in e.keys() and e["note"]), None)
                 last_uit  = next((e["timestamp"][11:16] for e in reversed(entries_sorted) if e["action"] == "uit"), "—")
 
                 # Te laat detectie — reden aanwezig = te laat geweest
@@ -428,14 +430,15 @@ def generate_excel(db_rows, employees_meta, date_from, date_to, logo_path=None):
                     fmt_dur(day["worked_sec"]),
                     fmt_dur(day["break_sec"]),
                     fmt_dec(day["worked_sec"]),
-                    first_reason or ""
+                    first_reason or "",
+                    first_note or ""
                 ]
 
                 for ci, val in enumerate(row_values, 1):
                     c = ws2.cell(row_num, ci, val)
                     c.fill = row_fill
                     c.border = thin(GRAY_BORDER)
-                    c.alignment = align('center' if ci != 8 else 'left', 'center')
+                    c.alignment = align('center' if ci not in (8, 9) else 'left', 'center')
                     if is_late and not is_weekend:
                         c.font = fnt(size=10, color=LATE_RED, bold=(ci in (1, 8)))
                     elif ci == 1:
@@ -462,7 +465,7 @@ def generate_excel(db_rows, employees_meta, date_from, date_to, logo_path=None):
         c.alignment = align('center', 'center')
         c.border = thin(BLUE_DARK)
 
-        for ci, val in enumerate(["", "", "", fmt_dur(emp["total_worked"]), fmt_dur(emp["total_breaks"]), fmt_dec(emp["total_worked"]), ""], 3):
+        for ci, val in enumerate(["", "", "", fmt_dur(emp["total_worked"]), fmt_dur(emp["total_breaks"]), fmt_dec(emp["total_worked"]), "", ""], 3):
             c = ws2.cell(total_row2, ci, val)
             c.font = fnt(bold=True, size=10, color=WHITE)
             c.fill = fill(BLUE)
@@ -503,7 +506,7 @@ def generate_excel(db_rows, employees_meta, date_from, date_to, logo_path=None):
         # ── Kolombreedte per medewerker ────────────────────────────────────────
         set_widths(ws2, {
             "A": 14, "B": 6, "C": 10, "D": 10,
-            "E": 12, "F": 12, "G": 14, "H": 22
+            "E": 12, "F": 12, "G": 14, "H": 18, "I": 24
         })
         ws2.freeze_panes = "A10"
 

@@ -55,6 +55,9 @@ for col, defn in [("active","INTEGER NOT NULL DEFAULT 1"),("pin","TEXT"),("langu
 try: c.execute("ALTER TABLE time_entries ADD COLUMN reason TEXT")
 except: pass
 
+try: c.execute("ALTER TABLE time_entries ADD COLUMN note TEXT")
+except: pass
+
 # Migration version tracking
 c.execute("INSERT OR IGNORE INTO settings VALUES ('db_version', '2')")
 

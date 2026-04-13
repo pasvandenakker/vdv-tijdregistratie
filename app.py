@@ -212,7 +212,7 @@ def save_entry(code, action, reason=None):
 
 def get_entry_by_id(entry_id):
     conn = get_db_connection()
-    row = conn.execute("SELECT id, code, action, timestamp, reason FROM time_entries WHERE id = ?", (entry_id,)).fetchone()
+    row = conn.execute("SELECT id, code, action, timestamp, reason, note FROM time_entries WHERE id = ?", (entry_id,)).fetchone()
     conn.close()
     return row
 
@@ -874,7 +874,7 @@ def logs():
     employee_filter = request.args.get("employee", "").strip()
     page = max(1, int(request.args.get("page", 1)))
 
-    query = "SELECT t.id, t.code, e.name, t.action, t.timestamp, t.reason FROM time_entries t LEFT JOIN employees e ON t.code=e.code WHERE 1=1"
+    query = "SELECT t.id, t.code, e.name, t.action, t.timestamp, t.reason, t.note FROM time_entries t LEFT JOIN employees e ON t.code=e.code WHERE 1=1"
     count_query = "SELECT COUNT(*) FROM time_entries t LEFT JOIN employees e ON t.code=e.code WHERE 1=1"
     params = []
     if search:
@@ -1009,6 +1009,7 @@ def edit_entry(entry_id):
     if request.method == "POST":
         action = str(request.form.get("action", "")).strip().lower()
         timestamp = str(request.form.get("timestamp", "")).strip()
+        note = str(request.form.get("note", "")).strip()[:500] or None
         if action not in ["in", "uit", "pauze_in", "pauze_uit"]:
             error_message = "Ongeldige actie."
         elif not timestamp:
@@ -1023,15 +1024,15 @@ def edit_entry(entry_id):
             if not is_valid:
                 error_message = msg
         if not error_message:
-            old_val = f"{entry['action']} {entry['timestamp']}"
-            new_val = f"{action} {timestamp}"
+            old_val = f"{entry['action']} {entry['timestamp']} | note: {entry['note'] or '-'}"
+            new_val = f"{action} {timestamp} | note: {note or '-'}"
             conn = get_db_connection()
-            conn.execute("UPDATE time_entries SET action=?, timestamp=? WHERE id=?", (action, timestamp, entry_id))
+            conn.execute("UPDATE time_entries SET action=?, timestamp=?, note=? WHERE id=?", (action, timestamp, note, entry_id))
             conn.commit()
             conn.close()
             audit_log("edit_entry", "time_entry", entry_id, old_val, new_val)
             return redirect(url_for("logs"))
-        entry = {"id": entry["id"], "code": entry["code"], "action": action, "timestamp": timestamp}
+        entry = {"id": entry["id"], "code": entry["code"], "action": action, "timestamp": timestamp, "note": note, "reason": entry["reason"]}
     return render_template("edit_entry.html", entry=entry, error_message=error_message)
 
 
@@ -1051,7 +1052,8 @@ def add_entry():
         action = request.form.get("action", "").strip().lower()
         timestamp = request.form.get("timestamp", "").strip()
         reason = request.form.get("reason", "").strip() or None
-        form_data = {"code": code, "action": action, "timestamp": timestamp, "reason": reason}
+        note = request.form.get("note", "").strip()[:500] or None
+        form_data = {"code": code, "action": action, "timestamp": timestamp, "reason": reason, "note": note}
 
         if not code:
             error_message = "Selecteer een medewerker."
@@ -1069,8 +1071,8 @@ def add_entry():
             # Temporarily add entry to validate sequence
             temp_conn = get_db_connection()
             cur = temp_conn.execute(
-                "INSERT INTO time_entries (code, action, timestamp, reason) VALUES (?, ?, ?, ?)",
-                (code, action, timestamp, reason)
+                "INSERT INTO time_entries (code, action, timestamp, reason, note) VALUES (?, ?, ?, ?, ?)",
+                (code, action, timestamp, reason, note)
             )
             new_id = cur.lastrowid
             temp_conn.commit()
@@ -1117,7 +1119,7 @@ pip install openpyxl Pillow</pre>
 
     conn = get_db_connection()
     rows = conn.execute(
-        """SELECT t.code, COALESCE(e.name, t.code) as name, t.action, t.timestamp
+        """SELECT t.code, COALESCE(e.name, t.code) as name, t.action, t.timestamp, t.reason, t.note
            FROM time_entries t LEFT JOIN employees e ON t.code=e.code
            WHERE DATE(t.timestamp) >= ? AND DATE(t.timestamp) <= ?
            ORDER BY t.code, datetime(t.timestamp)""",
@@ -1151,7 +1153,7 @@ pip install openpyxl Pillow</pre>
 def export_csv():
     date_from = request.args.get("from", "")
     date_to = request.args.get("to", "")
-    query = "SELECT t.id, t.code, e.name, t.action, t.timestamp, t.reason FROM time_entries t LEFT JOIN employees e ON t.code=e.code WHERE 1=1"
+    query = "SELECT t.id, t.code, e.name, t.action, t.timestamp, t.reason, t.note FROM time_entries t LEFT JOIN employees e ON t.code=e.code WHERE 1=1"
     params = []
     if date_from:
         query += " AND DATE(t.timestamp)>=?"; params.append(date_from)
@@ -1163,9 +1165,9 @@ def export_csv():
     conn.close()
     output = StringIO()
     writer = csv.writer(output)
-    writer.writerow(["ID", "Code", "Naam", "Actie", "Tijdstip", "Reden"])
+    writer.writerow(["ID", "Code", "Naam", "Actie", "Tijdstip", "Reden", "Notitie"])
     for row in rows:
-        writer.writerow([row["id"], row["code"], row["name"] or "", row["action"].upper(), row["timestamp"], row["reason"] or ""])
+        writer.writerow([row["id"], row["code"], row["name"] or "", row["action"].upper(), row["timestamp"], row["reason"] or "", row["note"] or ""])
     return Response(output.getvalue(), mimetype="text/csv",
         headers={"Content-Disposition": "attachment; filename=registraties.csv"})
 

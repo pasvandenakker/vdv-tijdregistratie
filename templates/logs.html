@@ -57,6 +57,7 @@
                 <th>Actie</th>
                 <th>Tijdstip</th>
                 <th>Reden</th>
+                <th>Notitie</th>
                 <th></th>
               </tr>
             </thead>
@@ -72,7 +73,8 @@
                   </span>
                 </td>
                 <td class="text-mono">{{ row['timestamp'] }}</td>
-                <td class="text-muted" style="font-size:12px; max-width:120px; overflow:hidden; text-overflow:ellipsis;">{{ row['reason'] or '' }}</td>
+                <td class="text-muted" style="font-size:12px; max-width:120px; overflow:hidden; text-overflow:ellipsis;" title="{{ row['reason'] or '' }}">{{ row['reason'] or '' }}</td>
+                <td class="text-muted" style="font-size:12px; max-width:160px; overflow:hidden; text-overflow:ellipsis;" title="{{ row['note'] or '' }}">{{ row['note'] or '' }}</td>
                 <td class="text-right" style="white-space:nowrap;">
                   <a href="/edit-entry/{{ row['id'] }}" class="btn btn-sm">Bewerken</a>
                   <form method="POST" action="/delete-entry/{{ row['id'] }}" style="display:inline;" onsubmit="return confirm('Weet je zeker dat je deze registratie wilt verwijderen?');">
@@ -82,7 +84,7 @@
                 </td>
               </tr>
               {% else %}
-              <tr><td colspan="7" style="text-align:center; padding:32px; color:var(--hint);">Geen registraties gevonden.</td></tr>
+              <tr><td colspan="8" style="text-align:center; padding:32px; color:var(--hint);">Geen registraties gevonden.</td></tr>
               {% endfor %}
             </tbody>
           </table>
